@@ -1,0 +1,99 @@
+[project]
+name = "pyversity"
+description = "Retrieval Result Diversification"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Thomas van Dongen", email = "thomas123@live.nl" }]
+dynamic = ["version"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Natural Language :: English",
+]
+
+dependencies = [
+    "numpy"
+]
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "mypy",
+    "pre-commit",
+    "pytest",
+    "pytest-coverage",
+    "ruff",
+]
+
+[tool.ruff]
+exclude = [".venv/"]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    # Annotations: Enforce type annotations
+    "ANN",
+    # Complexity: Enforce a maximum cyclomatic complexity
+    "C90",
+    # Pydocstyle: Enforce docstrings
+    "D",
+    # Remove unused imports
+    "F",
+    # Isort: Enforce import order
+    "I",
+    # Numpy: Enforce numpy style
+    "NPY",
+    # Print: Forbid print statements
+    "T20",
+]
+ignore = [
+    # Allow self and cls to be untyped, and allow Any type
+    "ANN101", "ANN102", "ANN401",
+    # Pydocstyle ignores
+    "D100", "D101", "D104", "D203", "D212", "D401",
+    # Allow use of f-strings in logging
+    "G004"
+]
+
+[tool.pydoclint]
+style = "sphinx"
+exclude = "test_"
+allow-init-docstring = true
+arg-type-hints-in-docstring = false
+check-return-types = false
+require-return-section-when-returning-nothing = false
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+license-files = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyversity*"]
+
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools_scm
+
+[tool.setuptools.dynamic]
+version = {attr = "pyversity.version.__version__"}
