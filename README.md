@@ -1,4 +1,9 @@
-# Pyversity — Diversified Re‑Ranking for Retrieval
+
+<h2 align="center">
+  <img width="35%" alt="Pyversity logo" src="assets/images/pyversity_logo.png"><br/>
+  Fast Diversification for Retrieval
+</h2>
+
 
 Pyversity is a small, fast library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
