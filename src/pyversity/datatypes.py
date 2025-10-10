@@ -27,8 +27,8 @@ class DiversificationResult:
 
     Attributes
     ----------
-        indices: Selected item indices.
-        marginal_gains: Marginal gains/relevance scores for the selected items.
+        indices: Diversified item indices.
+        marginal_gains: Marginal gains/relevance scores for the diversified items.
         strategy: Diversification strategy used.
         parameters: Additional parameters used in the strategy.
 

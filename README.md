@@ -28,12 +28,14 @@ embeddings  = np.random.randn(100, 256).astype(np.float32)
 scores  = np.random.rand(100).astype(np.float32)
 
 # Diversify with with a chosen strategy (in this case MMR)
-diversified_indices, diversified_scores = diversify(
+diversification_result = diversify(
     embeddings=embeddings,
     scores=scores,
     k=10,
     strategy=Strategy.MMR,
 )
+# Get the indicices of the diversified result
+diversified_indices = diversification_result.indices
 ```
 
 
