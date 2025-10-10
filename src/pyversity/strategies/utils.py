@@ -8,8 +8,8 @@ from pyversity.utils import normalize_rows, prepare_inputs, vector_similarity
 
 def greedy_select(
     strategy: Literal["mmr", "msd"],
-    relevances: np.ndarray,
     embeddings: np.ndarray,
+    scores: np.ndarray,
     k: int,
     *,
     metric: Metric,
@@ -25,8 +25,8 @@ def greedy_select(
     between relevance and diversity based on the specified strategy.
 
     :param strategy: Either "mmr" (Maximal Marginal Relevance) or "msd" (Maximal Sum of Distances).
-    :param relevances: 1D array of relevance scores for each item.
     :param embeddings: 2D array of shape (n_samples, n_features).
+    :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
@@ -41,7 +41,7 @@ def greedy_select(
         raise ValueError("lambda_param must be in [0, 1]")
 
     # Prepare inputs
-    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(relevances, embeddings, k)
+    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(scores, embeddings, k)
     if early_exit:
         # Nothing to select: return empty arrays
         return np.empty(0, np.int32), np.empty(0, np.float32)

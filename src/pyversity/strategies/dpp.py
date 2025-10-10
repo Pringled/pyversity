@@ -12,8 +12,8 @@ def _exp_zscore_weights(relevance: np.ndarray, beta: float) -> np.ndarray:
 
 
 def dpp(
-    relevances: np.ndarray,
     embeddings: np.ndarray,
+    scores: np.ndarray,
     k: int,
     beta: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -24,15 +24,15 @@ def dpp(
     maximizing the determinant of a kernel matrix that balances item relevance
     and pairwise similarity.
 
-    :param relevances: 1D array of relevance scores for each item.
     :param embeddings: 2D array of shape (n_samples, n_features).
+    :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
     :param beta: Controls the influence of relevance scores in the DPP kernel.
                  Higher values increase the emphasis on relevance.
     :return: Tuple of selected indices and their marginal gains.
     """
     # Prepare inputs
-    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(relevances, embeddings, k)
+    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(scores, embeddings, k)
     if early_exit:
         # Nothing to select: return empty arrays
         return np.empty(0, np.int32), np.empty(0, np.float32)

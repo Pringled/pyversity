@@ -5,8 +5,8 @@ from pyversity.utils import normalize_rows, pairwise_similarity, prepare_inputs
 
 
 def cover(
-    relevances: np.ndarray,
     embeddings: np.ndarray,
+    scores: np.ndarray,
     k: int,
     theta: float = 0.5,
     gamma: float = 0.5,
@@ -19,8 +19,8 @@ def cover(
     This strategy chooses `k` items by combining pure relevance with
     diversity-driven coverage using a concave submodular formulation.
 
-    :param relevances: 1D array of relevance scores for each item.
     :param embeddings: 2D array of shape (n_samples, n_features).
+    :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
     :param theta: Trade-off between relevance and coverage in [0, 1].
                   1.0 = pure relevance, 0.0 = pure coverage.
@@ -38,7 +38,7 @@ def cover(
         raise ValueError("gamma must be in (0, 1]")
 
     # Prepare inputs
-    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(relevances, embeddings, k)
+    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(scores, embeddings, k)
     if early_exit:
         # Nothing to select: return empty arrays
         return np.empty(0, np.int32), np.empty(0, np.float32)
