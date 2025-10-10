@@ -30,6 +30,7 @@ class DiversificationResult:
         indices: Diversified item indices.
         marginal_gains: Marginal gains/relevance scores for the diversified items.
         strategy: Diversification strategy used.
+        diversity: Diversity parameter used in the strategy.
         parameters: Additional parameters used in the strategy.
 
     """
@@ -37,4 +38,5 @@ class DiversificationResult:
     indices: np.ndarray
     marginal_gains: np.ndarray
     strategy: Strategy
-    parameters: dict
+    diversity: float
+    parameters: dict | None = None

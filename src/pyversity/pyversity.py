@@ -11,6 +11,7 @@ def diversify(
     scores: np.ndarray,
     k: int,
     strategy: Strategy = Strategy.MMR,
+    diversity: float = 0.5,
     **kwargs: Any,
 ) -> DiversificationResult:
     """
@@ -21,17 +22,19 @@ def diversify(
     :param k: The number of items to select for the diversified result.
     :param strategy: The diversification strategy to apply.
       Supported strategies are: 'mmr' (default), 'msd', 'cover', and 'dpp'.
+    :param diversity: Diversity parameter (often named lambda) in [0, 1].
+                      1.0 = pure relevance, 0.0 = pure diversity.
     :param **kwargs: Additional keyword arguments passed to the specific strategy function.
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
     :raises ValueError: If the provided strategy is not recognized.
     """
     if strategy == Strategy.MMR:
-        return mmr(embeddings, scores, k, **kwargs)
+        return mmr(embeddings, scores, k, diversity, **kwargs)
     if strategy == Strategy.MSD:
-        return msd(embeddings, scores, k, **kwargs)
+        return msd(embeddings, scores, k, diversity, **kwargs)
     if strategy == Strategy.COVER:
-        return cover(embeddings, scores, k, **kwargs)
+        return cover(embeddings, scores, k, diversity, **kwargs)
     if strategy == Strategy.DPP:
-        return dpp(embeddings, scores, k, **kwargs)
+        return dpp(embeddings, scores, k, diversity, **kwargs)
     raise ValueError(f"Unknown strategy: {strategy}")

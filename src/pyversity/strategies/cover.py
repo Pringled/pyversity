@@ -8,7 +8,7 @@ def cover(
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
-    theta: float = 0.5,
+    diversity: float = 0.5,
     gamma: float = 0.5,
     metric: Metric = Metric.COSINE,
     normalize: bool = True,
@@ -22,8 +22,8 @@ def cover(
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
-    :param theta: Trade-off between relevance and coverage in [0, 1].
-                  1.0 = pure relevance, 0.0 = pure coverage.
+    :param diversity: Trade-off between relevance and coverage in [0, 1] (theta parameter).
+                      1.0 = pure relevance, 0.0 = pure coverage.
     :param gamma: Concavity parameter in (0, 1]; lower values emphasize diversity.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
@@ -33,13 +33,12 @@ def cover(
     :raises ValueError: If gamma is not in (0, 1].
     """
     # Validate parameters
-    if not (0.0 <= float(theta) <= 1.0):
-        raise ValueError("theta must be in [0, 1]")
+    if not (0.0 <= float(diversity) <= 1.0):
+        raise ValueError("diversity must be in [0, 1]")
     if not (0.0 < float(gamma) <= 1.0):
         raise ValueError("gamma must be in (0, 1]")
 
     params = {
-        "theta": theta,
         "gamma": gamma,
         "metric": metric,
     }
@@ -52,6 +51,7 @@ def cover(
             indices=np.empty(0, np.int32),
             marginal_gains=np.empty(0, np.float32),
             strategy=Strategy.COVER,
+            diversity=diversity,
             parameters=params,
         )
 
@@ -59,7 +59,7 @@ def cover(
         # Normalize feature vectors to unit length for cosine similarity
         feature_matrix = normalize_rows(feature_matrix)
 
-    if float(theta) == 1.0:
+    if float(diversity) == 1.0:
         # Pure relevance: select top-k by relevance scores
         topk = np.argsort(-relevance_scores)[:top_k].astype(np.int32)
         gains = relevance_scores[topk].astype(np.float32, copy=False)
@@ -67,6 +67,7 @@ def cover(
             indices=topk,
             marginal_gains=gains,
             strategy=Strategy.COVER,
+            diversity=diversity,
             parameters=params,
         )
 
@@ -87,7 +88,7 @@ def cover(
         coverage_gains = (concave_after - concave_before[None, :]).sum(axis=1)
 
         # Combine relevance and coverage gains
-        candidate_scores = theta * relevance_scores + (1.0 - theta) * coverage_gains
+        candidate_scores = diversity * relevance_scores + (1.0 - diversity) * coverage_gains
         candidate_scores[selected_mask] = -np.inf
 
         # Select item with highest combined score
@@ -103,5 +104,6 @@ def cover(
         indices=selected_indices,
         marginal_gains=marginal_gains,
         strategy=Strategy.COVER,
+        diversity=diversity,
         parameters=params,
     )

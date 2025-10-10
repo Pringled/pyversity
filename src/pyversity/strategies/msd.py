@@ -8,7 +8,7 @@ def msd(
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
-    lambda_param: float = 0.5,
+    diversity: float = 0.5,
     metric: Metric = Metric.COSINE,
     normalize: bool = True,
 ) -> DiversificationResult:
@@ -22,9 +22,8 @@ def msd(
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
-    :param lambda_param: Trade-off parameter in [0, 1].
+    :param diversity: Trade-off parameter in [0, 1] (lambda parameter).
                   1.0 = pure relevance, 0.0 = pure diversity.
-
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
     :return: A DiversificationResult containing the selected item indices,
@@ -37,5 +36,5 @@ def msd(
         k=k,
         metric=metric,
         normalize=normalize,
-        lambda_param=lambda_param,
+        diversity=diversity,
     )

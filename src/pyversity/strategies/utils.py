@@ -14,7 +14,7 @@ def greedy_select(
     *,
     metric: Metric,
     normalize: bool,
-    lambda_param: float,
+    diversity: float = 0.5,
 ) -> DiversificationResult:
     """
     Greedy selection for MMR/MSD strategies.
@@ -30,19 +30,18 @@ def greedy_select(
     :param k: Number of items to select.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param lambda_param: Trade-off parameter in [0, 1].
+    :param diversity: Trade-off parameter in [0, 1] (lambda parameter).
                   1.0 = pure relevance, 0.0 = pure diversity.
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
-    :raises ValueError: If lambda_param is not in [0, 1].
+    :raises ValueError: If diversity is not in [0, 1].
     :raises ValueError: If input shapes are inconsistent.
     """
     # Validate parameters
-    if not (0.0 <= float(lambda_param) <= 1.0):
-        raise ValueError("lambda_param must be in [0, 1]")
+    if not (0.0 <= float(diversity) <= 1.0):
+        raise ValueError("diversity must be in [0, 1]")
 
     params = {
-        "lambda_param": lambda_param,
         "metric": metric,
     }
 
@@ -54,6 +53,7 @@ def greedy_select(
             indices=np.empty(0, np.int32),
             marginal_gains=np.empty(0, np.float32),
             strategy=Strategy.MMR if strategy == "mmr" else Strategy.MSD,
+            diversity=diversity,
             parameters=params,
         )
 
@@ -77,7 +77,7 @@ def greedy_select(
     # Select the first item based on pure relevance
     best_index = int(np.argmax(relevance_scores))
     selected_indices[0] = best_index
-    marginal_gains[0] = float(lambda_param * relevance_scores[best_index])
+    marginal_gains[0] = float(diversity * relevance_scores[best_index])
     selected_mask[best_index] = True
 
     for step in range(1, top_k):
@@ -85,7 +85,7 @@ def greedy_select(
             # Update maximum similarity to selected items
             sim_for_penalty = vector_similarity(feature_matrix, feature_matrix[best_index], metric=metric)
             np.maximum(max_similarity_to_selected, sim_for_penalty, out=max_similarity_to_selected)
-            candidate_scores = lambda_param * relevance_scores - (1.0 - lambda_param) * max_similarity_to_selected
+            candidate_scores = diversity * relevance_scores - (1.0 - diversity) * max_similarity_to_selected
         else:
             # Update cumulative distance to selected items
             raw_sim = feature_matrix @ feature_matrix[best_index]
@@ -95,7 +95,7 @@ def greedy_select(
             else:
                 distance = -raw_sim
             cumulative_distance_to_selected += distance
-            candidate_scores = lambda_param * relevance_scores + (1.0 - lambda_param) * cumulative_distance_to_selected
+            candidate_scores = diversity * relevance_scores + (1.0 - diversity) * cumulative_distance_to_selected
 
         # Mask already selected items and select the best candidate
         candidate_scores[selected_mask] = -np.inf
@@ -108,5 +108,6 @@ def greedy_select(
         indices=selected_indices,
         marginal_gains=marginal_gains,
         strategy=Strategy.MMR if strategy == "mmr" else Strategy.MSD,
+        diversity=diversity,
         parameters=params,
     )
