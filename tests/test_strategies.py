@@ -85,12 +85,6 @@ def test_dpp() -> None:
     emb = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=np.float32)
     scores = np.array([0.1, 0.2, 0.3], dtype=np.float32)
 
-    # Diversity-only (diversity=1.0): ignore relevance, diversity-only kernel
-    res = dpp(emb, scores, k=3, diversity=3.0)
-    assert 1 <= res.indices.size <= 3
-    assert np.all(res.marginal_gains >= -1e-7)
-    assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
-
     # Strong diversity (diversity=1)
     res = dpp(emb, scores, k=2, diversity=1.0)
     assert 1 <= res.indices.size <= 2
@@ -99,6 +93,12 @@ def test_dpp() -> None:
 
     # Balanced (diversity=0.5)
     res = dpp(emb, scores, k=2, diversity=0.5)
+    assert 1 <= res.indices.size <= 2
+    assert np.all(res.marginal_gains >= -1e-7)
+    assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
+
+    # Low diversity (diversity=0.0): more relevance-driven
+    res = dpp(emb, scores, k=2, diversity=0.0)
     assert 1 <= res.indices.size <= 2
     assert np.all(res.marginal_gains >= -1e-7)
     assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
