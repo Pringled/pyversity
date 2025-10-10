@@ -32,7 +32,11 @@ def dpp(
                       Higher values increase the emphasis on diversity.
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
+    :raises ValueError: If diversity is not in [0, 1].
     """
+    if not (0.0 <= float(diversity) <= 1.0):
+        raise ValueError("diversity must be in [0, 1]")
+
     # Beta parameter to control relevance influence in DPP kernel.
     # This is the inverse of diversity to align with common notation.
     beta = 1 - diversity
