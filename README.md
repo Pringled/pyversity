@@ -4,9 +4,13 @@
   Fast Diversification for Retrieval
 </h2>
 
+<div align="center">
+
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
 [Why Diversify?](#why-diversify?)
+
+</div>
 
 Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
