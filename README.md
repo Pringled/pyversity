@@ -35,6 +35,7 @@ diversified_indices = diversified_result.indices
 ```
 
 
+
 ## Supported Strategies
 
 The following table describes the supported strategies, how they work, their time complexity, and when to use them.
