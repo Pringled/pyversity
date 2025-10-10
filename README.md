@@ -15,7 +15,7 @@
 Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
 
-It implements several popular strategies such as MMR, MSD, DPP, and Cover with a clear, unified API.More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). The only dependency is NumPy, making the package very lightweight.
+It implements several popular diversification strategies such as MMR, MSD, DPP, and Cover with a clear, unified API. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). The only dependency is NumPy, making the package very lightweight.
 
 
 ## Quickstart
@@ -88,3 +88,7 @@ The implementations in this package are based on the following research papers:
 
 - **DPP (efficient greedy implementation)**: Chen, L., Zhang, G., & Zhou, H. (2018). Fast greedy MAP inference for determinantal point process to improve recommendation diversity.
 [Link](https://arxiv.org/pdf/1709.05135)
+
+## Author
+
+Thomas van Dongen
