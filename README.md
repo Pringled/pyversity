@@ -1,14 +1,12 @@
 # Pyversity — Diversified Re‑Ranking for Retrieval
 
 **Pyversity** is a small, fast library for *diversifying* retrieval results.
-Given a set of vector embeddings and relevance scores, Pyversity selects a subset that balances **relevance** and **diversity**.
+Retrieval systems can return very similar items. Pyversity helps you
+efficiently re-rank these results to encourage diversity: surfacing items that are
+still relevant but less redundant.
 
-It implements several standard strategies with clear, well‑documented APIs:
+It implements several popular strategies such as MMR, MSD, DPP, and Cover with a clear, unified API. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies).
 
-- **MMR** — Maximum Marginal Relevance
-- **MSD** — Max Sum of (pairwise) Distances
-- **DPP** — Determinantal Point Processes
-- **COVER** — Facility‑location/coverage with concave gains
 
 ## Quickstart
 
@@ -28,14 +26,14 @@ embeddings  = np.random.randn(100, 256).astype(np.float32)
 scores  = np.random.rand(100).astype(np.float32)
 
 # Diversify with with a chosen strategy (in this case MMR)
-diversification_result = diversify(
+diversified_result = diversify(
     embeddings=embeddings,
     scores=scores,
     k=10,
     strategy=Strategy.MMR,
 )
 # Get the indicices of the diversified result
-diversified_indices = diversification_result.indices
+diversified_indices = diversifified_result.indices
 ```
 
 
