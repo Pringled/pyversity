@@ -39,17 +39,17 @@ diversified_result = diversify(
 diversified_indices = diversified_result.indices
 ```
 
-The returned DiversificationResult can be used to access the diversified `indices`, as well as the `marginal gains` of the selecte strategy and other info. The strategies are extremely fast: this example runs in 0.0001s.
+The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `marginal gains` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in 0.0001s.
 
 
 
 ## Supported Strategies
 
-The following table describes the supported strategies, how they work, their time complexity, and when to use them.
+The following table describes the supported strategies, how they work, their time complexity, and when to use them. The papers linked in the [references](#references) section provide more in-depth information on the strengths/weaknesses of the supported strategies.
 
 | Strategy                              | What It Does                                                                                   | Time Complexity           | When to Use                                                                                    |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
-| **MMR** (Maximum Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what’s already picked. | **O(k · n · d)**          | Best **default**. Fast, simple, and works well when you just want to avoid near-duplicates.    |
+| **MMR** (Maximum Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what’s already picked. | **O(k · n · d)**          | Good default. Fast, simple, and works well when you just want to avoid near-duplicates.    |
 | **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
