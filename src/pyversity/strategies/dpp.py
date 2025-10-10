@@ -52,6 +52,7 @@ def dpp(
             marginal_gains=np.empty(0, np.float32),
             strategy=Strategy.DPP,
             diversity=diversity,
+            parameters={"scale": scale},
         )
     # Normalize feature vectors to unit length for cosine similarity
     feature_matrix = normalize_rows(feature_matrix)
@@ -108,4 +109,5 @@ def dpp(
         marginal_gains=marginal_gains[:step],
         strategy=Strategy.DPP,
         diversity=diversity,
+        parameters={"scale": scale},
     )
