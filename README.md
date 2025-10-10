@@ -8,7 +8,7 @@
 
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
-[Why Diversify?](#why-diversify?)
+[Why Diversify?](#why-diversify)
 
 </div>
 
@@ -31,9 +31,9 @@ Diversify retrieval results:
 import numpy as np
 from pyversity import diversify, Strategy
 
-# Define embeddings and scores
-embeddings  = np.random.randn(100, 256).astype(np.float32)
-scores  = np.random.rand(100).astype(np.float32)
+# Define embeddings and scores (e.g. cosine similarities of a query result)
+embeddings = np.random.randn(100, 256).astype(np.float32)
+scores = np.random.rand(100).astype(np.float32)
 
 # Diversify with with a chosen strategy (in this case MMR)
 diversified_result = diversify(
