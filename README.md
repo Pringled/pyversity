@@ -38,12 +38,15 @@ diversified_indices, diversified_scores = diversify(
 
 
 ## Supported Strategies
+
+The following table describes the supported strategies, how they work, their time complexity, and when to use them.
+
 | Strategy                              | What It Does                                                                                   | Time Complexity           | When to Use                                                                                    |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
 | **MMR** (Maximum Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what’s already picked. | **O(k · n · d)**          | Best **default**. Fast, simple, and works well when you just want to avoid near-duplicates.    |
 | **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
-| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for **topic coverage** or clustering scenarios. Higher quality, but slower on large `n`. |
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to **eliminate redundancy** or ensure diversity is built-in to selection.  |
+| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for **topic coverage** or clustering scenarios. Good for quality, but slower for large `n`. |
 
 ## References
 
