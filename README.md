@@ -5,7 +5,7 @@
 </h2>
 
 
-Pyversity is a small, fast library for diversifying retrieval results.
+Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
 
 It implements several popular strategies such as MMR, MSD, DPP, and Cover with a clear, unified API. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies).
@@ -38,6 +38,8 @@ diversified_result = diversify(
 # Get the indicices of the diversified result
 diversified_indices = diversified_result.indices
 ```
+
+The returned DiversificationResult can be used to access the diversified `indices`, as well as the `marginal gains` of the selecte strategy and other info. The strategies are extremely fast: this example runs in 0.0001s.
 
 
 
