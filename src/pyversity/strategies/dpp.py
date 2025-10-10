@@ -39,7 +39,8 @@ def dpp(
 
     # Beta parameter to control relevance influence in DPP kernel.
     # This is the inverse of diversity to align with common notation.
-    beta = 1 - diversity
+    beta_scale = 3.0  # Scale to amplify the effect of diversity in the kernel
+    beta = (1 - diversity) * beta_scale
 
     # Prepare inputs
     feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
