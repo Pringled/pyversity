@@ -31,9 +31,9 @@ def msd(
     """
     return greedy_select(
         "msd",
-        scores,
-        embeddings,
-        k,
+        embeddings=embeddings,
+        scores=scores,
+        k=k,
         metric=metric,
         normalize=normalize,
         lambda_param=lambda_param,

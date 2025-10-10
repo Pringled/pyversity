@@ -30,9 +30,9 @@ def mmr(
     """
     return greedy_select(
         "mmr",
-        scores,
-        embeddings,
-        k,
+        embeddings=embeddings,
+        scores=scores,
+        k=k,
         metric=metric,
         normalize=normalize,
         lambda_param=lambda_param,

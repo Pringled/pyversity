@@ -26,11 +26,11 @@ def diversify(
     :raises ValueError: If the provided strategy is not recognized.
     """
     if strategy == Strategy.MMR:
-        return mmr(scores, embeddings, k, **kwargs)
+        return mmr(embeddings, scores, k, **kwargs)
     if strategy == Strategy.MSD:
-        return msd(scores, embeddings, k, **kwargs)
+        return msd(embeddings, scores, k, **kwargs)
     if strategy == Strategy.COVER:
-        return cover(scores, embeddings, k, **kwargs)
+        return cover(embeddings, scores, k, **kwargs)
     if strategy == Strategy.DPP:
-        return dpp(scores, embeddings, k, **kwargs)
+        return dpp(embeddings, scores, k, **kwargs)
     raise ValueError(f"Unknown strategy: {strategy}")
