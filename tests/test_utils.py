@@ -29,9 +29,11 @@ def test_prepare_inputs() -> None:
     with pytest.raises(ValueError):
         prepare_inputs(emb, scores[:2], k=2)
 
+    # Early exit case with k=0
     _, _, k0, early0 = prepare_inputs(emb, scores, k=0)
     assert k0 == 0 and early0 is True
 
+    # Early exit case with empty input
     _, _, k1, early1 = prepare_inputs(np.empty((0, 3)), np.array([]), k=2)
     assert k1 == 0 and early1 is True
 
