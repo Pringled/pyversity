@@ -26,6 +26,11 @@ dependencies = [
     "numpy"
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/Pringled/pyversity"
+"Bug Reports" = "https://github.com/Pringled/pyversity/issues"
+"Source" = "https://github.com/Pringled/pyversity"
+
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
