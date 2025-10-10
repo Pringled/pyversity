@@ -11,11 +11,11 @@ def greedy_select(
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
-    *,
+    return_gains: bool,
     metric: Metric,
     normalize: bool,
     lambda_param: float,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     """
     Greedy selection for MMR/MSD strategies.
 
@@ -28,6 +28,7 @@ def greedy_select(
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
+    :param return_gains: Whether to return the marginal gains along with the indices.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
     :param lambda_param: Trade-off parameter in [0, 1].
@@ -93,4 +94,6 @@ def greedy_select(
         marginal_gains[step] = float(candidate_scores[best_index])
         selected_mask[best_index] = True
 
-    return selected_indices, marginal_gains
+    if return_gains:
+        return selected_indices, marginal_gains
+    return selected_indices

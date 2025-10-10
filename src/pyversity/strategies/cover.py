@@ -1,7 +1,35 @@
+from typing import Literal, overload
+
 import numpy as np
 
 from pyversity.datatypes import Metric
 from pyversity.utils import normalize_rows, pairwise_similarity, prepare_inputs
+
+
+@overload
+def cover(
+    embeddings: np.ndarray,
+    scores: np.ndarray,
+    k: int,
+    theta: float = 0.5,
+    gamma: float = 0.5,
+    return_gains: Literal[True] = True,
+    metric: Metric = Metric.COSINE,
+    normalize: bool = True,
+) -> tuple[np.ndarray, np.ndarray]: ...
+
+
+@overload
+def cover(
+    embeddings: np.ndarray,
+    scores: np.ndarray,
+    k: int,
+    theta: float = 0.5,
+    gamma: float = 0.5,
+    return_gains: Literal[False] = False,
+    metric: Metric = Metric.COSINE,
+    normalize: bool = True,
+) -> np.ndarray: ...
 
 
 def cover(
@@ -10,9 +38,10 @@ def cover(
     k: int,
     theta: float = 0.5,
     gamma: float = 0.5,
+    return_gains: bool = False,
     metric: Metric = Metric.COSINE,
     normalize: bool = True,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     """
     Select a subset of items that balances relevance and coverage.
 
@@ -25,9 +54,10 @@ def cover(
     :param theta: Trade-off between relevance and coverage in [0, 1].
                   1.0 = pure relevance, 0.0 = pure coverage.
     :param gamma: Concavity parameter in (0, 1]; lower values emphasize diversity.
+    :param return_gains: Whether to return the marginal gains along with the indices.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :return: Tuple of selected indices and their marginal gains.
+    :return: selected indices, or a tuple of selected indices and their marginal gains.
     :raises ValueError: If theta is not in [0, 1].
     :raises ValueError: If gamma is not in (0, 1].
     """
@@ -82,4 +112,4 @@ def cover(
         # Update accumulated coverage
         accumulated_coverage += similarity_matrix[:, best_index]
 
-    return selected_indices, marginal_gains
+    return (selected_indices, marginal_gains) if return_gains else selected_indices
