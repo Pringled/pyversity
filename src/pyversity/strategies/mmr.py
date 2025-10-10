@@ -22,8 +22,8 @@ def mmr(
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
-    :param diversity: Trade-off parameter in [0, 1] (lambda parameter).
-                      1.0 = pure relevance, 0.0 = pure diversity.
+    :param diversity: Trade-off parameter in [0, 1] (inverse of lambda parameter).
+                      1.0 = pure diversity, 0.0 = pure relevance.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
     :return: A DiversificationResult containing the selected item indices,

@@ -30,7 +30,7 @@ def greedy_select(
     :param k: Number of items to select.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param diversity: Trade-off parameter in [0, 1].
+    :param diversity: Trade-off parameter in [0, 1]. Inverse of lambda parameter.
                   1.0 = pure diversity, 0.0 = pure relevance.
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
