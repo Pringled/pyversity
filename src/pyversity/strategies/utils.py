@@ -1,7 +1,6 @@
-from typing import Literal, Tuple
+from typing import Literal
 
 import numpy as np
-from numpy.typing import NDArray
 
 from pyversity.datatypes import Metric
 from pyversity.utils import normalize_rows, prepare_inputs, vector_similarity
@@ -16,7 +15,7 @@ def greedy_select(
     metric: Metric,
     normalize: bool,
     lambda_param: float,
-) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Greedy selection for MMR/MSD strategies.
 
@@ -34,7 +33,6 @@ def greedy_select(
     :param lambda_param: Trade-off parameter in [0, 1].
                   1.0 = pure relevance, 0.0 = pure diversity.
     :return: Tuple of selected indices and their marginal gains.
-    :raises ValueError: If strategy is not "mmr" or "msd".
     :raises ValueError: If lambda_param is not in [0, 1].
     :raises ValueError: If input shapes are inconsistent.
     """

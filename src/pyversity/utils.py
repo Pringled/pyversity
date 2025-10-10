@@ -1,14 +1,12 @@
-from typing import Tuple
-
 import numpy as np
-from numpy.typing import NDArray
 
 from pyversity.datatypes import Metric
 
+# A small float32 constant to avoid division by zero
 EPS32: float = float(np.finfo(np.float32).eps)
 
 
-def normalize_rows(vectors: np.ndarray) -> NDArray[np.float32]:
+def normalize_rows(vectors: np.ndarray) -> np.ndarray:
     """
     Normalize each row vector to unit length.
 
@@ -21,9 +19,7 @@ def normalize_rows(vectors: np.ndarray) -> NDArray[np.float32]:
     return vectors / safe_norms
 
 
-def prepare_inputs(
-    relevances: np.ndarray, embeddings: np.ndarray, k: int
-) -> Tuple[NDArray[np.float32], NDArray[np.float32], int, bool]:
+def prepare_inputs(relevances: np.ndarray, embeddings: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray, int, bool]:
     """
     Prepare relevance scores and embeddings.
 
@@ -50,10 +46,10 @@ def prepare_inputs(
 
 
 def vector_similarity(
-    matrix: NDArray[np.float32],
-    vector: NDArray[np.float32],
+    matrix: np.ndarray,
+    vector: np.ndarray,
     metric: Metric,
-) -> NDArray[np.float32]:
+) -> np.ndarray:
     """
     Compute (non-negative) similarity between each row in a matrix and a single vector.
 
@@ -72,9 +68,9 @@ def vector_similarity(
 
 
 def pairwise_similarity(
-    matrix: NDArray[np.float32],
+    matrix: np.ndarray,
     metric: Metric,
-) -> NDArray[np.float32]:
+) -> np.ndarray:
     """
     Compute (non-negative) pairwise similarities between all rows in a matrix.
 
