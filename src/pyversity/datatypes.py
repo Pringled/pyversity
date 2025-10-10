@@ -1,4 +1,7 @@
+from dataclasses import dataclass
 from enum import Enum
+
+import numpy as np
 
 
 class Strategy(str, Enum):
@@ -15,3 +18,23 @@ class Metric(str, Enum):
 
     COSINE = "cosine"
     DOT = "dot"
+
+
+@dataclass
+class DiversificationResult:
+    """
+    Result of a diversification operation.
+
+    Attributes
+    ----------
+        indices: Selected item indices.
+        marginal_gains: Marginal gains/relevance scores for the selected items.
+        strategy: Diversification strategy used.
+        parameters: Additional parameters used in the strategy.
+
+    """
+
+    indices: np.ndarray
+    marginal_gains: np.ndarray
+    strategy: Strategy
+    parameters: dict

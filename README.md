@@ -61,4 +61,4 @@ The implementations in this package are based on the following research papers:
 - **DPP**: Kulesza, A., & Taskar, B. (2012). Determinantal Point Processes for Machine Learning. https://api.semanticscholar.org/CorpusID:51975610
 
 - **DPP (efficient greedy implementation)**: Chen, L., Zhang, G., & Zhou, H. (2018). Fast greedy MAP inference for determinantal point process to improve recommendation diversity.
-https://doi.org/10.48550/arXiv.1709.0513
+[Link](https://arxiv.org/pdf/1709.05135)

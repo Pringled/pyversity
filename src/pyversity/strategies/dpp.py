@@ -1,7 +1,6 @@
-from typing import Literal, overload
-
 import numpy as np
 
+from pyversity.datatypes import DiversificationResult, Strategy
 from pyversity.utils import EPS32, normalize_rows, prepare_inputs
 
 
@@ -13,33 +12,12 @@ def _exp_zscore_weights(relevance: np.ndarray, beta: float) -> np.ndarray:
     return weights.astype(np.float32, copy=False)
 
 
-@overload
 def dpp(
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
     beta: float = 1.0,
-    return_gains: Literal[True] = True,
-) -> tuple[np.ndarray, np.ndarray]: ...
-
-
-@overload
-def dpp(
-    embeddings: np.ndarray,
-    scores: np.ndarray,
-    k: int,
-    beta: float = 1.0,
-    return_gains: Literal[False] = False,
-) -> np.ndarray: ...
-
-
-def dpp(
-    embeddings: np.ndarray,
-    scores: np.ndarray,
-    k: int,
-    beta: float = 1.0,
-    return_gains: bool = False,
-) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+) -> DiversificationResult:
     """
     Greedy determinantal point process (DPP) selection.
 
@@ -52,15 +30,19 @@ def dpp(
     :param k: Number of items to select.
     :param beta: Controls the influence of relevance scores in the DPP kernel.
                  Higher values increase the emphasis on relevance.
-    :param return_gains: Whether to return the marginal gains along with the indices.
-    :return: selected indices, or a tuple of selected indices and their marginal gains.
+    :return: A DiversificationResult containing the selected item indices,
+      their marginal gains, the strategy used, and the parameters.
     """
     # Prepare inputs
     feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
     if early_exit:
         # Nothing to select: return empty arrays
-        return np.empty(0, np.int32), np.empty(0, np.float32)
-
+        return DiversificationResult(
+            indices=np.empty(0, np.int32),
+            marginal_gains=np.empty(0, np.float32),
+            strategy=Strategy.DPP,
+            parameters={"beta": beta},
+        )
     # Normalize feature vectors to unit length for cosine similarity
     feature_matrix = normalize_rows(feature_matrix)
 
@@ -111,4 +93,9 @@ def dpp(
         residual_variance -= update_component * update_component
         np.maximum(residual_variance, 0.0, out=residual_variance)
 
-    return (selected_indices[:step], marginal_gains[:step]) if return_gains else selected_indices[:step]
+    return DiversificationResult(
+        indices=selected_indices[:step],
+        marginal_gains=marginal_gains[:step],
+        strategy=Strategy.DPP,
+        parameters={"beta": beta},
+    )
