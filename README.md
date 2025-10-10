@@ -4,6 +4,9 @@
   Fast Diversification for Retrieval
 </h2>
 
+[Quickstart](#quickstart) •
+[Supported Strategies](#supported-strategies) •
+[Why Diversify?](#why-diversify?)
 
 Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
@@ -41,8 +44,6 @@ diversified_indices = diversified_result.indices
 
 The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `marginal gains` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in 0.0001s.
 
-
-
 ## Supported Strategies
 
 The following table describes the supported strategies, how they work, their time complexity, and when to use them. The papers linked in the [references](#references) section provide more in-depth information on the strengths/weaknesses of the supported strategies.
@@ -53,6 +54,21 @@ The following table describes the supported strategies, how they work, their tim
 | **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
+
+
+## Why Diversify?
+
+Traditional retrieval systems rank results purely by relevance (how closely each item matches the query) While effective, this can lead to redundancy: top results often look nearly identical, which can create a poor user experience.
+
+Diversification techniques like MMR, MSD, COVER, and DPP help balance relevance and variety.
+Each new item is chosen not only because it’s relevant, but also because it adds new information that wasn’t already covered by earlier results.
+
+This improves exploration, user satisfaction, and coverage across many domains, for example:
+
+- E-commerce: Show different product styles, not multiple copies of the same black pants.
+- News search: Highlight articles from different outlets or viewpoints.
+- Academic retrieval: Surface papers from different subfields or methods.
+- RAG / LLM contexts: Avoid feeding the model near-duplicate passages.
 
 ## References
 
