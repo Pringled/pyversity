@@ -33,6 +33,10 @@ def dpp(
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
     """
+    # Beta parameter to control relevance influence in DPP kernel.
+    # This is the inverse of diversity to align with common notation.
+    beta = 1 - diversity
+
     # Prepare inputs
     feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
     if early_exit:
@@ -47,7 +51,7 @@ def dpp(
     feature_matrix = normalize_rows(feature_matrix)
 
     num_items = feature_matrix.shape[0]
-    weights = _exp_zscore_weights(relevance_scores, diversity)
+    weights = _exp_zscore_weights(relevance_scores, beta)
 
     # Initial residual variance is the weighted self-similarity
     residual_variance = (weights * weights + float(EPS32)).astype(np.float32, copy=False)

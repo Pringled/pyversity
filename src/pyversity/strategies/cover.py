@@ -43,6 +43,10 @@ def cover(
         "metric": metric,
     }
 
+    # Theta parameter for trade-off between relevance and diversity
+    # This is 1 - diversity to align with common notation
+    theta = 1.0 - diversity
+
     # Prepare inputs
     feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
     if early_exit:
@@ -59,7 +63,7 @@ def cover(
         # Normalize feature vectors to unit length for cosine similarity
         feature_matrix = normalize_rows(feature_matrix)
 
-    if float(diversity) == 1.0:
+    if float(theta) == 1.0:
         # Pure relevance: select top-k by relevance scores
         topk = np.argsort(-relevance_scores)[:top_k].astype(np.int32)
         gains = relevance_scores[topk].astype(np.float32, copy=False)
@@ -88,7 +92,7 @@ def cover(
         coverage_gains = (concave_after - concave_before[None, :]).sum(axis=1)
 
         # Combine relevance and coverage gains
-        candidate_scores = diversity * relevance_scores + (1.0 - diversity) * coverage_gains
+        candidate_scores = theta * relevance_scores + (1.0 - theta) * coverage_gains
         candidate_scores[selected_mask] = -np.inf
 
         # Select item with highest combined score

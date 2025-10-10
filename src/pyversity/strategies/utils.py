@@ -30,8 +30,8 @@ def greedy_select(
     :param k: Number of items to select.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param diversity: Trade-off parameter in [0, 1] (lambda parameter).
-                  1.0 = pure relevance, 0.0 = pure diversity.
+    :param diversity: Trade-off parameter in [0, 1].
+                  1.0 = pure diversity, 0.0 = pure relevance.
     :return: A DiversificationResult containing the selected item indices,
       their marginal gains, the strategy used, and the parameters.
     :raises ValueError: If diversity is not in [0, 1].
@@ -44,6 +44,10 @@ def greedy_select(
     params = {
         "metric": metric,
     }
+
+    # Lambda parameter for trade-off between relevance and diversity
+    # This is 1 - diversity to align with common notation
+    lambda_param = 1.0 - diversity
 
     # Prepare inputs
     feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
@@ -77,7 +81,7 @@ def greedy_select(
     # Select the first item based on pure relevance
     best_index = int(np.argmax(relevance_scores))
     selected_indices[0] = best_index
-    marginal_gains[0] = float(diversity * relevance_scores[best_index])
+    marginal_gains[0] = float(lambda_param * relevance_scores[best_index])
     selected_mask[best_index] = True
 
     for step in range(1, top_k):
@@ -85,7 +89,7 @@ def greedy_select(
             # Update maximum similarity to selected items
             sim_for_penalty = vector_similarity(feature_matrix, feature_matrix[best_index], metric=metric)
             np.maximum(max_similarity_to_selected, sim_for_penalty, out=max_similarity_to_selected)
-            candidate_scores = diversity * relevance_scores - (1.0 - diversity) * max_similarity_to_selected
+            candidate_scores = lambda_param * relevance_scores - (1.0 - lambda_param) * max_similarity_to_selected
         else:
             # Update cumulative distance to selected items
             raw_sim = feature_matrix @ feature_matrix[best_index]
@@ -95,7 +99,7 @@ def greedy_select(
             else:
                 distance = -raw_sim
             cumulative_distance_to_selected += distance
-            candidate_scores = diversity * relevance_scores + (1.0 - diversity) * cumulative_distance_to_selected
+            candidate_scores = lambda_param * relevance_scores + (1.0 - lambda_param) * cumulative_distance_to_selected
 
         # Mask already selected items and select the best candidate
         candidate_scores[selected_mask] = -np.inf
