@@ -50,32 +50,32 @@ def dpp(
     marginal_gains = np.empty(top_k, dtype=np.float32)
     selected_mask = np.zeros(num_items, dtype=bool)
 
-    t = 0
-    for t in range(top_k):
+    step = 0
+    for step in range(top_k):
         residual_variance[selected_mask] = -np.inf
         best_index = int(np.argmax(residual_variance))
         best_gain = float(residual_variance[best_index])
 
-        selected_indices[t] = best_index
-        marginal_gains[t] = best_gain
+        selected_indices[step] = best_index
+        marginal_gains[step] = best_gain
         selected_mask[best_index] = True
 
-        if t == top_k - 1 or best_gain <= 0.0:
-            t += 1
+        if step == top_k - 1 or best_gain <= 0.0:
+            step += 1
             break
 
         weighted_similarity_to_best = (weights * (feature_matrix @ feature_matrix[best_index])) * weights[best_index]
 
-        if t > 0:
-            projected_component: np.ndarray = component_matrix[:, :t] @ component_matrix[best_index, :t]
+        if step > 0:
+            projected_component: np.ndarray = component_matrix[:, :step] @ component_matrix[best_index, :step]
         else:
             projected_component = np.zeros(num_items, dtype=np.float32)
 
         sqrt_best_gain = np.float32(np.sqrt(best_gain))
         update_component = (weighted_similarity_to_best - projected_component) / (sqrt_best_gain + EPS32)
 
-        component_matrix[:, t] = update_component
+        component_matrix[:, step] = update_component
         residual_variance -= update_component * update_component
         np.maximum(residual_variance, 0.0, out=residual_variance)
 
-    return selected_indices[:t], marginal_gains[:t]
+    return selected_indices[:step], marginal_gains[:step]

@@ -15,7 +15,7 @@ def greedy_select(
     *,
     metric: Metric,
     normalize: bool,
-    alpha: float,
+    lambda_param: float,
 ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
     """
     Greedy selection for MMR/MSD strategies.
@@ -31,15 +31,15 @@ def greedy_select(
     :param k: Number of items to select.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param alpha: Trade-off parameter in [0, 1].
+    :param lambda_param: Trade-off parameter in [0, 1].
                   1.0 = pure relevance, 0.0 = pure diversity.
     :return: Tuple of selected indices and their marginal gains.
     :raises ValueError: If strategy is not "mmr" or "msd".
-    :raises ValueError: If alpha is not in [0, 1].
+    :raises ValueError: If lambda_param is not in [0, 1].
     :raises ValueError: If input shapes are inconsistent.
     """
-    if not (0.0 <= float(alpha) <= 1.0):
-        raise ValueError("alpha must be in [0, 1]")
+    if not (0.0 <= float(lambda_param) <= 1.0):
+        raise ValueError("lambda_param must be in [0, 1]")
 
     relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(relevances, embeddings, k)
     if early_exit:
@@ -60,7 +60,7 @@ def greedy_select(
 
     last_selected_index = int(np.argmax(relevance_scores))
     selected_indices[0] = last_selected_index
-    marginal_gains[0] = float(alpha * relevance_scores[last_selected_index])
+    marginal_gains[0] = float(lambda_param * relevance_scores[last_selected_index])
     selected_mask[last_selected_index] = True
 
     for t in range(1, top_k):
@@ -68,7 +68,7 @@ def greedy_select(
         if strategy == "mmr":
             sim_for_penalty = vector_similarity(feature_matrix, feature_matrix[last_selected_index], metric=metric)
             np.maximum(max_similarity_to_selected, sim_for_penalty, out=max_similarity_to_selected)
-            candidate_scores = alpha * relevance_scores - (1.0 - alpha) * max_similarity_to_selected
+            candidate_scores = lambda_param * relevance_scores - (1.0 - lambda_param) * max_similarity_to_selected
         else:
             raw_sim = feature_matrix @ feature_matrix[last_selected_index]
             if metric == Metric.COSINE:
@@ -77,7 +77,7 @@ def greedy_select(
             else:
                 distance = -raw_sim
             cumulative_distance_to_selected += distance
-            candidate_scores = alpha * relevance_scores + (1.0 - alpha) * cumulative_distance_to_selected
+            candidate_scores = lambda_param * relevance_scores + (1.0 - lambda_param) * cumulative_distance_to_selected
 
         candidate_scores[selected_mask] = -np.inf
         last_selected_index = int(np.argmax(candidate_scores))
