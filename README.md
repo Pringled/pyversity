@@ -1,9 +1,7 @@
 # Pyversity — Diversified Re‑Ranking for Retrieval
 
-**Pyversity** is a small, fast library for *diversifying* retrieval results.
-Retrieval systems can return very similar items. Pyversity helps you
-efficiently re-rank these results to encourage diversity: surfacing items that are
-still relevant but less redundant.
+Pyversity is a small, fast library for diversifying retrieval results.
+Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
 
 It implements several popular strategies such as MMR, MSD, DPP, and Cover with a clear, unified API. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies).
 
@@ -33,7 +31,7 @@ diversified_result = diversify(
     strategy=Strategy.MMR,
 )
 # Get the indicices of the diversified result
-diversified_indices = diversifified_result.indices
+diversified_indices = diversified_result.indices
 ```
 
 
@@ -45,8 +43,8 @@ The following table describes the supported strategies, how they work, their tim
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
 | **MMR** (Maximum Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what’s already picked. | **O(k · n · d)**          | Best **default**. Fast, simple, and works well when you just want to avoid near-duplicates.    |
 | **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
-| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to **eliminate redundancy** or ensure diversity is built-in to selection.  |
-| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for **topic coverage** or clustering scenarios. Good for quality, but slower for large `n`. |
+| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
+| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
 
 ## References
 
