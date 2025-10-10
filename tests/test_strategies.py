@@ -2,8 +2,7 @@ from typing import Any, Callable
 
 import numpy as np
 import pytest
-from pyversity import cover, diversify, dpp, mmr, msd
-from pyversity.datatypes import Metric, Strategy
+from pyversity import Metric, Strategy, cover, diversify, dpp, mmr, msd
 
 
 def test_mmr() -> None:
@@ -122,8 +121,11 @@ def test_diversify(strategy: Strategy, fn: Callable, kwargs: Any) -> None:
     emb = np.eye(4, dtype=np.float32)
     scores = np.array([0.3, 0.7, 0.1, 0.5], dtype=np.float32)
 
+    # direct call (new order: embeddings, scores, k)
     idx_direct, gains_direct = fn(emb, scores, k=2, **kwargs)
-    idx_disp, gains_disp = diversify(strategy, embeddings=emb, scores=scores, k=2, **kwargs)
+
+    # dispatcher call (new signature: embeddings, scores, k, strategy=...)
+    idx_disp, gains_disp = diversify(embeddings=emb, scores=scores, k=2, strategy=strategy, **kwargs)
 
     assert np.array_equal(idx_direct, idx_disp)
     assert np.allclose(gains_direct, gains_disp)

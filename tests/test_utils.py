@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyversity.datatypes import Metric
+from pyversity import Metric
 from pyversity.utils import (
     normalize_rows,
     pairwise_similarity,

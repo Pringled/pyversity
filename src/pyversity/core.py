@@ -7,19 +7,20 @@ from pyversity.strategies import cover, dpp, mmr, msd
 
 
 def diversify(
-    strategy: Strategy,
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
+    strategy: Strategy = Strategy.MMR,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Diversify a retrieval result using a selected strategy.
 
-    :param strategy: The diversification strategy to apply. Supported strategies are: MMR, MSD, COVER, and DPP.
-    :param embeddings: Array of embeddings for the items.
-    :param scores: Array of relevance scores for the items.
-    :param k: The number of items to select in the diversified result.
+    :param embeddings: Embeddings of the items to be diversified.
+    :param scores: Scores (relevances) of the items to be diversified.
+    :param k: The number of items to select for the diversified result.
+    :param strategy: The diversification strategy to apply.
+      Supported strategies are: 'mmr' (default), 'msd', 'cover', and 'dpp'.
     :param **kwargs: Additional keyword arguments passed to the specific strategy function.
     :return: A tuple containing an array of indices of the selected items
       and an array of corresponding relevance scores for the selected items.
