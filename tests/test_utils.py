@@ -38,16 +38,19 @@ def test_prepare_inputs() -> None:
 
 def test_vector_and_pairwise_similarity(sim_data: tuple[np.ndarray, np.ndarray]) -> None:
     """Test vector and pairwise similarity computations."""
-    X, v = sim_data
+    matrix, query_vector = sim_data
 
-    s_dot = vector_similarity(X, v, Metric.DOT)
-    assert np.all(s_dot >= 0)
+    # Vector-to-vector similarity
+    sim_dot = vector_similarity(matrix, query_vector, Metric.DOT)
+    assert np.all(sim_dot >= 0)
 
-    s_cos = vector_similarity(X, v, Metric.COSINE)
-    assert np.all(s_cos >= 0) and np.all(s_cos <= 1.0)
+    sim_cos = vector_similarity(matrix, query_vector, Metric.COSINE)
+    assert np.all(sim_cos >= 0) and np.all(sim_cos <= 1.0)
 
-    P_dot = pairwise_similarity(X, Metric.DOT)
-    assert P_dot.shape == (3, 3) and np.all(P_dot >= 0)
+    # Pairwise similarity between rows
+    pair_dot = pairwise_similarity(matrix, Metric.DOT)
+    assert pair_dot.shape == (3, 3) and np.all(pair_dot >= 0)
 
-    P_cos = pairwise_similarity(X, Metric.COSINE)
-    assert P_cos.shape == (3, 3) and np.all(P_cos <= 1.0 + 1e-6) and np.all(P_cos >= 0)
+    pair_cos = pairwise_similarity(matrix, Metric.COSINE)
+    assert pair_cos.shape == (3, 3)
+    assert np.all(pair_cos >= 0) and np.all(pair_cos <= 1.0 + 1e-6)
