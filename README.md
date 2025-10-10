@@ -8,7 +8,7 @@
 
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
-[Why Diversify?](#why-diversify)
+[Motivation](#motivation)
 
 </div>
 
@@ -60,7 +60,7 @@ The following table describes the supported strategies, how they work, their tim
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
 
 
-## Why Diversify?
+## Motivation
 
 Traditional retrieval systems rank results purely by relevance (how closely each item matches the query) While effective, this can lead to redundancy: top results often look nearly identical, which can create a poor user experience.
 
