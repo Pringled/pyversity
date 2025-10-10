@@ -49,12 +49,13 @@ diversified_indices, diversified_scores = diversify(
 
 The implementations in this package are based on the following research papers:
 
-- **MMR**: Carbonell, J., & Goldstein, J. (1998). The use of MMR, diversity-based reranking for reordering documents and producing summaries. In Proceedings of the 21st Annual International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR ’98), pp. 335–336. Association for Computing Machinery, Melbourne, Australia. https://doi.org/10.1145/290941.291025
+- **MMR**: Carbonell, J., & Goldstein, J. (1998). The use of MMR, diversity-based reranking for reordering documents and producing summaries. https://doi.org/10.1145/290941.291025
 
-- **MSD**: Borodin, A., Lee, H. C., & Ye, Y. (2012). Max-sum diversification, monotone submodular functions and dynamic updates. In Proceedings of the 31st ACM SIGMOD-SIGACT-SIGAI Symposium on Principles of Database Systems (PODS ’12), pp. 155–166. Association for Computing Machinery, Scottsdale, Arizona, USA. https://doi.org/10.1145/2213556.2213580
+- **MSD**: Borodin, A., Lee, H. C., & Ye, Y. (2012). Max-sum diversification, monotone submodular functions and dynamic updates. https://doi.org/10.1145/2213556.2213580
 
-- **COVER**: Puthiya Parambath, S. A., Usunier, N., & Grandvalet, Y. (2016). A coverage-based approach to recommendation diversity on similarity graph. In Proceedings of the 10th ACM Conference on Recommender Systems (RecSys ’16), pp. 15–22. Association for Computing Machinery, Boston, Massachusetts, USA. https://doi.org/10.1145/2959100.2959149
+- **COVER**: Puthiya Parambath, S. A., Usunier, N., & Grandvalet, Y. (2016). A coverage-based approach to recommendation diversity on similarity graph. https://doi.org/10.1145/2959100.2959149
 
-- **DPP**: Kulesza, A., & Taskar, B. (2012). Determinantal Point Processes for Machine Learning. Foundations and Trends in Machine Learning, 5(2–3), 123–286. https://api.semanticscholar.org/CorpusID:51975610
+- **DPP**: Kulesza, A., & Taskar, B. (2012). Determinantal Point Processes for Machine Learning. https://api.semanticscholar.org/CorpusID:51975610
 
-- **DPP (efficient greedy implementation)**: Chen, L., Zhang, G., & Zhou, H. (2018). Fast greedy MAP inference for determinantal point process to improve recommendation diversity. In Proceedings of the 32nd International Conference on Neural Information Processing Systems (NIPS ’18), pp. 5627–5638. Curran Associates Inc., Montréal, Canada.
+- **DPP (efficient greedy implementation)**: Chen, L., Zhang, G., & Zhou, H. (2018). Fast greedy MAP inference for determinantal point process to improve recommendation diversity.
+https://doi.org/10.48550/arXiv.1709.0513
