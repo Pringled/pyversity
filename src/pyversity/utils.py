@@ -19,30 +19,30 @@ def normalize_rows(vectors: np.ndarray) -> np.ndarray:
     return vectors / safe_norms
 
 
-def prepare_inputs(relevances: np.ndarray, embeddings: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray, int, bool]:
+def prepare_inputs(embeddings: np.ndarray, scores: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray, int, bool]:
     """
     Prepare relevance scores and embeddings.
 
-    :param relevances: Array of relevance scores.
     :param embeddings: Array of shape embeddings.
+    :param scores: Array of relevance scores.
     :param k: Number of top elements to consider.
     :return: Tuple of relevances, embeddings, k_clamped, early_exit.
     :raises ValueError: If input shapes are inconsistent.
     """
-    relevances = np.asarray(relevances, dtype=np.float32).reshape(-1)
+    relevance_scores = np.asarray(scores, dtype=np.float32).reshape(-1)
     embeddings = np.asarray(embeddings, dtype=np.float32, order="C")
 
     if embeddings.ndim != 2:
         raise ValueError(f"embeddings must be 2-D, got shape {embeddings.shape}")
 
     num_samples = embeddings.shape[0]
-    if relevances.shape[0] != num_samples:
-        raise ValueError(f"relevances length {relevances.shape[0]} != embeddings rows {num_samples}")
+    if relevance_scores.shape[0] != num_samples:
+        raise ValueError(f"relevance_scores length {relevance_scores.shape[0]} != embeddings rows {num_samples}")
 
     k_clamped = int(max(0, min(int(k), num_samples)))
     early_exit = (num_samples == 0) or (k_clamped == 0)
 
-    return relevances, embeddings, k_clamped, early_exit
+    return embeddings, relevance_scores, k_clamped, early_exit
 
 
 def vector_similarity(

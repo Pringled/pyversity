@@ -38,7 +38,7 @@ def cover(
         raise ValueError("gamma must be in (0, 1]")
 
     # Prepare inputs
-    relevance_scores, feature_matrix, top_k, early_exit = prepare_inputs(scores, embeddings, k)
+    feature_matrix, relevance_scores, top_k, early_exit = prepare_inputs(embeddings, scores, k)
     if early_exit:
         # Nothing to select: return empty arrays
         return np.empty(0, np.int32), np.empty(0, np.float32)

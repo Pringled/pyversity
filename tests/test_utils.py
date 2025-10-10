@@ -23,16 +23,16 @@ def test_prepare_inputs() -> None:
     """Test input preparation and validation."""
     scores = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     emb = np.eye(3, dtype=np.float32)
-    r, E, k_clamped, early = prepare_inputs(scores, emb, k=5)
-    assert r.shape == (3,) and E.shape == (3, 3) and k_clamped == 3 and early is False
+    embeddings, relevance_scores, k_clamped, early = prepare_inputs(emb, scores, k=5)
+    assert relevance_scores.shape == (3,) and embeddings.shape == (3, 3) and k_clamped == 3 and early is False
 
     with pytest.raises(ValueError):
-        prepare_inputs(scores[:2], emb, k=2)
+        prepare_inputs(emb, scores[:2], k=2)
 
-    _, _, k0, early0 = prepare_inputs(scores, emb, k=0)
+    _, _, k0, early0 = prepare_inputs(emb, scores, k=0)
     assert k0 == 0 and early0 is True
 
-    _, _, k1, early1 = prepare_inputs(np.array([]), np.empty((0, 3)), k=2)
+    _, _, k1, early1 = prepare_inputs(np.empty((0, 3)), np.array([]), k=2)
     assert k1 == 0 and early1 is True
 
 
