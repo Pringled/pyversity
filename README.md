@@ -35,14 +35,15 @@ from pyversity import diversify, Strategy
 embeddings = np.random.randn(100, 256)
 scores = np.random.rand(100)
 
-# Diversify with with a chosen strategy (in this case MMR) and a diversity of 0.5 (balanced)
+# Diversify the result
 diversified_result = diversify(
     embeddings=embeddings,
     scores=scores,
-    k=10,
-    strategy=Strategy.MMR,
-    diversity=0.5
+    k=10, # Number of items to select
+    strategy=Strategy.MMR, # Diversification strategy to use
+    diversity=0.5 # Diversity parameter (higher values prioritize diversity)
 )
+
 # Get the indicices of the diversified result
 diversified_indices = diversified_result.indices
 ```
