@@ -1,7 +1,7 @@
 
 <h2 align="center">
   <img width="35%" alt="Pyversity logo" src="assets/images/pyversity_logo.png"><br/>
-  Fast Diversification for Retrieval
+  Fast Diversification for Search & Retrieval
 </h2>
 
 <div align="center">
