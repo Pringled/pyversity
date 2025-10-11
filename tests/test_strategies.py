@@ -30,6 +30,28 @@ def test_mmr() -> None:
     with pytest.raises(ValueError):
         mmr(np.eye(2, dtype=np.float32), np.array([1.0, 0.5], dtype=np.float32), k=1, diversity=-0.1)
 
+    # Early exit on empty input
+    emb = np.empty((0, 3), dtype=np.float32)
+    scores = np.array([], dtype=np.float32)
+    res = mmr(emb, scores, k=5, diversity=0.5, metric=Metric.COSINE, normalize=True)
+    assert res.indices.size == 0 and res.selection_scores.size == 0
+
+    # Ensure metrics avoids duplicate selection
+    emb = np.array(
+        [
+            [1.0, 0.0],
+            [2.0, 0.0],
+            [0.0, 1.0],
+        ],
+        dtype=np.float32,
+    )
+    scores = np.array([0.9, 0.8, 0.2], dtype=np.float32)
+    res_dot = mmr(emb, scores, k=2, diversity=0.5, metric=Metric.DOT, normalize=False)
+    res_cos = mmr(emb, scores, k=2, diversity=0.5, metric=Metric.COSINE, normalize=True)
+
+    assert res_dot.indices.size == 2 and res_cos.indices.size == 2
+    assert 1 not in res_dot.indices
+
 
 def test_msd() -> None:
     """Test MSD strategy with various diversity settings (1=diverse, 0=relevance)."""
@@ -52,6 +74,22 @@ def test_msd() -> None:
     # Bounds check
     with pytest.raises(ValueError):
         msd(np.eye(2, dtype=np.float32), np.array([1.0, 0.5], dtype=np.float32), k=1, diversity=1.1)
+
+    # Ensure metrics avoids duplicate selection
+    emb = np.array(
+        [
+            [1.0, 0.0],
+            [2.0, 0.0],
+            [0.0, 1.0],
+        ],
+        dtype=np.float32,
+    )
+    scores = np.array([0.9, 0.8, 0.2], dtype=np.float32)
+    res_dot = msd(emb, scores, k=2, diversity=0.5, metric=Metric.DOT, normalize=False)
+    res_cos = msd(emb, scores, k=2, diversity=0.5, metric=Metric.COSINE, normalize=True)
+
+    assert res_dot.indices.size == 2 and res_cos.indices.size == 2
+    assert 1 not in res_dot.indices
 
 
 def test_cover() -> None:
@@ -79,6 +117,12 @@ def test_cover() -> None:
     with pytest.raises(ValueError):
         cover(emb, scores, k=2, gamma=-0.5)
 
+    # Early exit on empty input
+    emb = np.empty((0, 3), dtype=np.float32)
+    scores = np.array([], dtype=np.float32)
+    res = cover(emb, scores, k=5)
+    assert res.indices.size == 0 and res.selection_scores.size == 0
+
 
 def test_dpp() -> None:
     """Test DPP strategy with various diversity settings (1=diverse, 0=relevance)."""
@@ -103,9 +147,34 @@ def test_dpp() -> None:
     assert np.all(res.selection_scores >= -1e-7)
     assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
 
+    # Bounds check
+    emb = np.eye(3, dtype=np.float32)
+    scores = np.array([0.1, 0.2, 0.3], dtype=np.float32)
+    with pytest.raises(ValueError):
+        dpp(emb, scores, k=2, diversity=-0.01)
+    with pytest.raises(ValueError):
+        dpp(emb, scores, k=2, diversity=1.01)
+
     # Early exit on empty input
     res = dpp(np.empty((0, 3), dtype=np.float32), np.array([], dtype=np.float32), k=3)
     assert res.indices.size == 0 and res.selection_scores.size == 0
+
+    # Test projecting out the component in the span of previously selected items
+    emb = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.7, 0.7, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.7, 0.7],
+        ],
+        dtype=np.float32,
+    )
+    scores = np.array([0.6, 0.9, 0.4, 0.3], dtype=np.float32)
+    res = dpp(emb, scores, k=3, diversity=0.5)
+
+    assert res.indices.size == 3
+    assert np.all(res.selection_scores >= -1e-7)
+    assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
 
 
 @pytest.mark.parametrize(
@@ -130,3 +199,12 @@ def test_diversify(strategy: Strategy, fn: Callable[..., DiversificationResult],
 
     assert np.array_equal(res_direct.indices, res_disp.indices)
     assert np.allclose(res_direct.selection_scores, res_disp.selection_scores)
+
+
+def test_diversify_invalid_strategy() -> None:
+    """Test that diversify raises ValueError on invalid strategy."""
+    emb = np.eye(3, dtype=np.float32)
+    scores = np.array([0.1, 0.2, 0.3], dtype=np.float32)
+
+    with pytest.raises(ValueError):
+        diversify(embeddings=emb, scores=scores, k=2, strategy="invalid_strategy")

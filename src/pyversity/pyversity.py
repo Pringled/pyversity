@@ -10,7 +10,7 @@ def diversify(
     embeddings: np.ndarray,
     scores: np.ndarray,
     k: int,
-    strategy: Strategy = Strategy.MMR,
+    strategy: Strategy | str = Strategy.MMR,
     diversity: float = 0.5,
     **kwargs: Any,
 ) -> DiversificationResult:

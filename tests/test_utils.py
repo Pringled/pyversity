@@ -37,6 +37,13 @@ def test_prepare_inputs() -> None:
     _, _, k1, early1 = prepare_inputs(np.empty((0, 3)), np.array([]), k=2)
     assert k1 == 0 and early1 is True
 
+    # Embeddings not 2D
+    with pytest.raises(ValueError):
+        prepare_inputs(np.array([1.0, 2.0], dtype=np.float32), np.array([0.5], dtype=np.float32), k=1)
+    # Length mismatch
+    with pytest.raises(ValueError):
+        prepare_inputs(np.eye(3, dtype=np.float32), np.array([0.1, 0.2], dtype=np.float32), k=2)
+
 
 def test_vector_and_pairwise_similarity(sim_data: tuple[np.ndarray, np.ndarray]) -> None:
     """Test vector and pairwise similarity computations."""
