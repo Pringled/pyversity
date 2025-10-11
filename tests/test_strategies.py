@@ -14,7 +14,7 @@ def test_mmr() -> None:
     res = mmr(emb, scores, k=3, diversity=0.0, metric=Metric.COSINE, normalize=True)
     expected = np.array([1, 3, 2], dtype=np.int32)
     assert np.array_equal(res.indices, expected)
-    assert np.allclose(res.marginal_gains, scores[expected])
+    assert np.allclose(res.selection_scores, scores[expected])
 
     # Strong diversity (diversity=1): avoid near-duplicate
     emb = np.array([[1.0, 0.0], [0.999, 0.001], [0.0, 1.0]], dtype=np.float32)
@@ -63,7 +63,7 @@ def test_cover() -> None:
     res = cover(emb, scores, k=2, diversity=0.0)
     expected = np.array([1, 2], dtype=np.int32)
     assert np.array_equal(res.indices, expected)
-    assert np.allclose(res.marginal_gains, scores[expected])
+    assert np.allclose(res.selection_scores, scores[expected])
 
     # Balanced coverage (diversity=0.5, gamma=0.5): picks diverse set
     res = cover(emb, scores, k=2, diversity=0.5, gamma=0.5)
@@ -88,24 +88,24 @@ def test_dpp() -> None:
     # Strong diversity (diversity=1)
     res = dpp(emb, scores, k=2, diversity=1.0)
     assert 1 <= res.indices.size <= 2
-    assert np.all(res.marginal_gains >= -1e-7)
-    assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
+    assert np.all(res.selection_scores >= -1e-7)
+    assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
 
     # Balanced (diversity=0.5)
     res = dpp(emb, scores, k=2, diversity=0.5)
     assert 1 <= res.indices.size <= 2
-    assert np.all(res.marginal_gains >= -1e-7)
-    assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
+    assert np.all(res.selection_scores >= -1e-7)
+    assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
 
     # Low diversity (diversity=0.0): more relevance-driven
     res = dpp(emb, scores, k=2, diversity=0.0)
     assert 1 <= res.indices.size <= 2
-    assert np.all(res.marginal_gains >= -1e-7)
-    assert np.all(res.marginal_gains[:-1] + 1e-7 >= res.marginal_gains[1:])
+    assert np.all(res.selection_scores >= -1e-7)
+    assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
 
     # Early exit on empty input
     res = dpp(np.empty((0, 3), dtype=np.float32), np.array([], dtype=np.float32), k=3)
-    assert res.indices.size == 0 and res.marginal_gains.size == 0
+    assert res.indices.size == 0 and res.selection_scores.size == 0
 
 
 @pytest.mark.parametrize(
@@ -129,4 +129,4 @@ def test_diversify(strategy: Strategy, fn: Callable[..., DiversificationResult],
     res_disp = diversify(embeddings=emb, scores=scores, k=2, strategy=strategy, **kwargs)
 
     assert np.array_equal(res_direct.indices, res_disp.indices)
-    assert np.allclose(res_direct.marginal_gains, res_disp.marginal_gains)
+    assert np.allclose(res_direct.selection_scores, res_disp.selection_scores)

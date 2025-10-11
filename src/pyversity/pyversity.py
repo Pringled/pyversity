@@ -25,7 +25,7 @@ def diversify(
     :param diversity: Diversity parameter (range of [0, 1]). Higher values prioritize diversity and lower values prioritize relevance.
     :param **kwargs: Additional keyword arguments passed to the specific strategy function.
     :return: A DiversificationResult containing the selected item indices,
-      their marginal gains, the strategy used, and the parameters.
+      their selection scores, the strategy used, and the parameters.
     :raises ValueError: If the provided strategy is not recognized.
     """
     if strategy == Strategy.MMR:

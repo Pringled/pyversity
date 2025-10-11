@@ -27,7 +27,7 @@ def mmr(
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
     :return: A DiversificationResult containing the selected item indices,
-      their marginal gains, the strategy used, and the parameters.
+      their selection scores, the strategy used, and the parameters.
     """
     return greedy_select(
         "mmr",

@@ -44,11 +44,11 @@ diversified_result = diversify(
     diversity=0.5 # Diversity parameter (higher values prioritize diversity)
 )
 
-# Get the indicices of the diversified result
+# Get the indices of the diversified result
 diversified_indices = diversified_result.indices
 ```
 
-The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `marginal gains` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in 0.0001s.
+The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `selection_scores` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in 0.0001s.
 
 ## Supported Strategies
 

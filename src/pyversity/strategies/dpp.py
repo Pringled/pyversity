@@ -24,7 +24,7 @@ def dpp(
 
     This strategy selects a diverse and relevant subset of `k` items by
     maximizing the determinant of a kernel matrix that balances item relevance
-    and pairwise similarity.
+    and pairwise similarity. Note that
 
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
@@ -33,7 +33,7 @@ def dpp(
                       Higher values increase the emphasis on diversity.
     :param scale: Optional scaling factor for the beta parameter to adjust relevance influence.
     :return: A DiversificationResult containing the selected item indices,
-      their marginal gains, the strategy used, and the parameters.
+      their selection scores, the strategy used, and the parameters.
     :raises ValueError: If diversity is not in [0, 1].
     """
     if not (0.0 <= float(diversity) <= 1.0):
@@ -49,7 +49,7 @@ def dpp(
         # Nothing to select: return empty arrays
         return DiversificationResult(
             indices=np.empty(0, np.int32),
-            marginal_gains=np.empty(0, np.float32),
+            selection_scores=np.empty(0, np.float32),
             strategy=Strategy.DPP,
             diversity=diversity,
             parameters={"scale": scale},
@@ -80,8 +80,8 @@ def dpp(
         marginal_gains[step] = best_score
         selected_mask[best_index] = True
 
-        if step == top_k - 1 or best_score <= 0.0:
-            # No more items to select or no positive gain
+        if step == top_k - 1:
+            # No more items to select
             step += 1
             break
 
@@ -106,7 +106,7 @@ def dpp(
 
     return DiversificationResult(
         indices=selected_indices[:step],
-        marginal_gains=marginal_gains[:step],
+        selection_scores=marginal_gains[:step],
         strategy=Strategy.DPP,
         diversity=diversity,
         parameters={"scale": scale},

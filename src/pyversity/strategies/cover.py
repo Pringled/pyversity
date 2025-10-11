@@ -14,7 +14,7 @@ def cover(
     normalize: bool = True,
 ) -> DiversificationResult:
     """
-    Select a subset of items that balances relevance and coverage.
+    Select a subset of items that balances relevance and coverage/diversity.
 
     This strategy chooses `k` items by combining pure relevance with
     diversity-driven coverage using a concave submodular formulation.
@@ -22,14 +22,14 @@ def cover(
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
     :param k: Number of items to select.
-    :param diversity: Trade-off between relevance and coverage in [0, 1] (inverse of theta parameter).
+    :param diversity: Trade-off between relevance and coverage/diversity in [0, 1] (inverse of theta parameter).
                       1.0 = pure diversity, 0.0 = pure relevance.
     :param gamma: Concavity parameter in (0, 1]; lower values emphasize diversity.
     :param metric: Similarity metric to use. Default is Metric.COSINE.
     :param normalize: Whether to normalize embeddings before computing similarity.
     :return: A DiversificationResult containing the selected item indices,
-      their marginal gains, the strategy used, and the parameters.
-    :raises ValueError: If theta is not in [0, 1].
+      their selection scores, the strategy used, and the parameters.
+    :raises ValueError: If diversity is not in [0, 1].
     :raises ValueError: If gamma is not in (0, 1].
     """
     # Validate parameters
@@ -53,7 +53,7 @@ def cover(
         # Nothing to select: return empty arrays
         return DiversificationResult(
             indices=np.empty(0, np.int32),
-            marginal_gains=np.empty(0, np.float32),
+            selection_scores=np.empty(0, np.float32),
             strategy=Strategy.COVER,
             diversity=diversity,
             parameters=params,
@@ -69,7 +69,7 @@ def cover(
         gains = relevance_scores[topk].astype(np.float32, copy=False)
         return DiversificationResult(
             indices=topk,
-            marginal_gains=gains,
+            selection_scores=gains,
             strategy=Strategy.COVER,
             diversity=diversity,
             parameters=params,
@@ -106,7 +106,7 @@ def cover(
 
     return DiversificationResult(
         indices=selected_indices,
-        marginal_gains=marginal_gains,
+        selection_scores=marginal_gains,
         strategy=Strategy.COVER,
         diversity=diversity,
         parameters=params,

@@ -23,10 +23,10 @@ def prepare_inputs(embeddings: np.ndarray, scores: np.ndarray, k: int) -> tuple[
     """
     Prepare relevance scores and embeddings.
 
-    :param embeddings: Array of shape embeddings.
+    :param embeddings: Array of embeddings.
     :param scores: Array of relevance scores.
     :param k: Number of top elements to consider.
-    :return: Tuple of relevances, embeddings, k_clamped, early_exit.
+    :return: Tuple of embeddings, relevances, k_clamped, early_exit.
     :raises ValueError: If input shapes are inconsistent.
     """
     relevance_scores = np.asarray(scores, dtype=np.float32).reshape(-1)

@@ -33,7 +33,7 @@ def greedy_select(
     :param diversity: Trade-off parameter in [0, 1]. Inverse of lambda parameter.
                   1.0 = pure diversity, 0.0 = pure relevance.
     :return: A DiversificationResult containing the selected item indices,
-      their marginal gains, the strategy used, and the parameters.
+      their selection scores, the strategy used, and the parameters.
     :raises ValueError: If diversity is not in [0, 1].
     :raises ValueError: If input shapes are inconsistent.
     """
@@ -55,7 +55,7 @@ def greedy_select(
         # Nothing to select: return empty arrays
         return DiversificationResult(
             indices=np.empty(0, np.int32),
-            marginal_gains=np.empty(0, np.float32),
+            selection_scores=np.empty(0, np.float32),
             strategy=Strategy.MMR if strategy == "mmr" else Strategy.MSD,
             diversity=diversity,
             parameters=params,
@@ -110,7 +110,7 @@ def greedy_select(
 
     return DiversificationResult(
         indices=selected_indices,
-        marginal_gains=marginal_gains,
+        selection_scores=marginal_gains,
         strategy=Strategy.MMR if strategy == "mmr" else Strategy.MSD,
         diversity=diversity,
         parameters=params,
