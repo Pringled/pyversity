@@ -48,7 +48,9 @@ diversified_result = diversify(
 diversified_indices = diversified_result.indices
 ```
 
-The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `selection_scores` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in 0.0001s.
+The returned `DiversificationResult` can be used to access the diversified `indices`, as well as the `selection_scores` of the selected strategy and other useful info. The strategies are extremely fast and scalable: this example runs in milliseconds.
+
+The `diversity` parameter tunes the trade-off between relevance and diversity: 0.0 focuses purely on relevance (no diversification), while 1.0 maximizes diversity, potentially at the cost of relevance.
 
 ## Supported Strategies
 
@@ -64,7 +66,7 @@ The following table describes the supported strategies, how they work, their tim
 
 ## Motivation
 
-Traditional retrieval systems rank results purely by relevance (how closely each item matches the query) While effective, this can lead to redundancy: top results often look nearly identical, which can create a poor user experience.
+Traditional retrieval systems rank results purely by relevance (how closely each item matches the query). While effective, this can lead to redundancy: top results often look nearly identical, which can create a poor user experience.
 
 Diversification techniques like MMR, MSD, COVER, and DPP help balance relevance and variety.
 Each new item is chosen not only because it’s relevant, but also because it adds new information that wasn’t already covered by earlier results.
