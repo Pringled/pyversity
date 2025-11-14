@@ -17,7 +17,8 @@
 
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
-[Motivation](#motivation)
+[Motivation](#motivation) •
+[Examples](#examples)
 
 </div>
 
@@ -83,10 +84,11 @@ Each new item is chosen not only because it’s relevant, but also because it ad
 
 This improves exploration, user satisfaction, and coverage across many domains, for example:
 
-- E-commerce: Show different product styles, not multiple copies of the same black pants.
+- E-commerce: Show different product styles, not multiple copies of the same product.
 - News search: Highlight articles from different outlets or viewpoints.
 - Academic retrieval: Surface papers from different subfields or methods.
 - RAG / LLM contexts: Avoid feeding the model near-duplicate passages.
+- Recommendation feeds: Keep content diverse and engaging over time.
 
 ## Examples
 
