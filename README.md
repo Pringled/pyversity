@@ -9,6 +9,7 @@
     <a href="https://pypi.org/project/pyversity/"><img src="https://img.shields.io/pypi/v/pyversity?color=%23007ec6&label=pypi%20package" alt="Package version"></a>
     <a href="https://app.codecov.io/gh/Pringled/pyversity">
       <img src="https://codecov.io/gh/Pringled/pyversity/graph/badge.svg?token=2CV5W0ZT7T" alt="Codecov">
+    </a>
     <a href="https://github.com/Pringled/pyversity/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/license-MIT-green" alt="License - MIT">
     </a>
@@ -206,7 +207,7 @@ When summarizing or extracting information from a single long document, it’s b
 from pyversity import diversify, Strategy
 
 # Suppose you have:
-# - doc_chunk_embembeddings: embeddings of document chunks
+# - doc_chunk_embbeddings: embeddings of document chunks
 # - doc_chunk_scores: relevance scores for these chunks
 
 # Re-rank with MSD
