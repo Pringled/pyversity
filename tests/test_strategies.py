@@ -203,6 +203,14 @@ def test_ssd() -> None:
     with pytest.raises(ValueError):
         ssd(emb, scores, k=2, gamma=-0.5)
 
+    # recent_embeddings validation: must be 2D
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, diversity=0.5, recent_embeddings=np.array([0.0, 1.0], dtype=np.float32))
+
+    # recent_embeddings validation: dim mismatch with embeddings
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, diversity=0.5, recent_embeddings=np.ones((2, 4), dtype=np.float32))  # emb is (.,3)
+
     # Early exit on empty input
     emb = np.empty((0, 3), dtype=np.float32)
     scores = np.array([], dtype=np.float32)

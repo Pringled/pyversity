@@ -17,25 +17,27 @@ def ssd(  # noqa: C901
     normalize_scores: bool = True,
 ) -> DiversificationResult:
     """
-    Sliding Spectrum Decomposition (SSD*) selection.
+    Sliding Spectrum Decomposition (SSD) selection.
 
     This strategy selects `k` items using a greedy, sequence-aware approach that maintains a sliding window
     of Gram-Schmidt bases to promote diversity while considering recent context.
     If `recent_embeddings` are provided (oldest → newest), the window is seeded so the very first pick is
     already novel relative to what the user just saw.
 
+    Note: this is the implementation proposed in Equation 12 of the SSD paper, called SSD*.
+
     :param embeddings: 2D array (n_items, n_dims) of candidate embeddings.
     :param scores: 1D array (n_items,) of relevance scores.
     :param k: Number of items to select.
     :param diversity: Trade-off between relevance and diversity in [0, 1] (inverse of theta parameter).
         1.0 = pure diversity, 0.0 = pure relevance.
-    :param recent_embeddings: Optional 2D array (n_items, n_dims) with recent embeddings from oldest → newest.
+    :param recent_embeddings: Optional 2D array (m, n_dims) with recent embeddings from oldest → newest.
         seeds the sliding window so selection is aware of recent context.
     :param window: Sliding window size (≥1) for Gram-Schmidt bases.
     :param gamma: Diversity scale (> 0).
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param append_bias: Append constant-one bias dim after normalization (paper §5.3).
-    :param normalize_scores: Z-score scores per request (applied only if diversity > 0).
+    :param append_bias: Append constant-one bias dim after normalization.
+    :param normalize_scores: Z-score scores per request.
 
     :return: DiversificationResult with selected indices and their selection scores.
     :raises ValueError: If diversity ∉ [0, 1], or window < 1, or gamma ≤ 0.
@@ -63,6 +65,15 @@ def ssd(  # noqa: C901
             diversity=diversity,
             parameters={"gamma": gamma, "window": window},
         )
+    # Validate recent_embeddings
+    if recent_embeddings is not None and np.size(recent_embeddings) > 0:
+        if recent_embeddings.ndim != 2:
+            raise ValueError("recent_embeddings must be a 2D array of shape (n_items, n_dims).")
+        if recent_embeddings.shape[1] != feature_matrix.shape[1]:
+            raise ValueError(
+                f"recent_embeddings has {recent_embeddings.shape[1]} dims; "
+                f"expected {feature_matrix.shape[1]} to match `embeddings` columns."
+            )
 
     # Pure relevance: select top‑k by raw scores
     if float(theta) == 1.0:
@@ -136,11 +147,9 @@ def ssd(  # noqa: C901
     # Seed with recent context (oldest → newest)
     context_seed = 0
     if recent_embeddings is not None and np.size(recent_embeddings) > 0:
-        if recent_embeddings.ndim != 2 or recent_embeddings.shape[1] != embeddings.shape[1]:
-            raise ValueError("recent_embeddings must have shape (m, n_dims) matching `embeddings` columns.")
-        ctx = _prepare_vectors(recent_embeddings.astype(feature_matrix.dtype, copy=False))
-        ctx = ctx[-window:]  # keep only the latest window items
-        for vec in ctx:
+        context = _prepare_vectors(recent_embeddings.astype(feature_matrix.dtype, copy=False))
+        context = context[-window:]  # keep only the latest window items
+        for vec in context:
             # Orthogonalize the context vector against current bases
             residual_vec = vec.copy()
             for basis in basis_vectors:
