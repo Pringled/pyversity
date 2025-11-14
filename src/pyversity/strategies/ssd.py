@@ -183,11 +183,6 @@ def ssd(  # noqa: C901
     for step in range(1, top_k):
         # Find best candidate among unselected items
         available_indices = np.where(~selected_mask)[0]
-        if available_indices.size == 0:
-            selected_indices = selected_indices[:step]
-            selection_scores = selection_scores[:step]
-            break
-
         # Residual norms measure novelty relative to the last `window` selections/context
         residual_norms = np.linalg.norm(residual_matrix[available_indices], axis=1)
         combined_scores = theta * relevance_scores[available_indices] + (1.0 - theta) * gamma * residual_norms

@@ -202,6 +202,8 @@ def test_ssd() -> None:
         ssd(emb, scores, k=2, gamma=0.0)
     with pytest.raises(ValueError):
         ssd(emb, scores, k=2, gamma=-0.5)
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, window=0)
 
     # recent_embeddings validation: must be 2D
     with pytest.raises(ValueError):
@@ -253,6 +255,7 @@ def test_ssd_recent_embeddings_window_blocks_multiple_recent() -> None:
         (Strategy.MSD, msd, {"diversity": 0.5, "metric": Metric.COSINE, "normalize": True}),
         (Strategy.COVER, cover, {"diversity": 0.5, "gamma": 0.5}),
         (Strategy.DPP, dpp, {"diversity": 0.5}),
+        (Strategy.SSD, ssd, {"diversity": 0.5}),
     ],
 )
 def test_diversify(strategy: Strategy, fn: Callable[..., DiversificationResult], kwargs: Any) -> None:
