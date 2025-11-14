@@ -166,7 +166,7 @@ result = diversify(
 picked_indices = result.indices
 picked_embeddings = candidate_embeddings[picked_indices]
 
-# Maintain your rolling context window (keep oldest→newest)
+# Maintain the rolling context window for recent chunks
 recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, picked_embeddings])
 ```
 </details>
@@ -177,6 +177,7 @@ recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, picked_embeddings]
 In content feeds or infinite scroll scenarios, users consume items sequentially. To keep the experience engaging, it’s important to introduce novelty relative to recently shown items. The SSD strategy is well-suited for this:
 
 ```python
+import numpy as np
 from pyversity import diversify, Strategy
 
 # Suppose you have:
@@ -184,8 +185,8 @@ from pyversity import diversify, Strategy
 # - feed_scores: relevance scores for these items
 # - recent_feed_embeddings: embeddings of recently shown items in the feed (oldest→newest)
 
-# Re-rank with SSD (sequence-aware)
-res = diversify(
+# Sequence-aware re-ranking with Sliding Spectrum Decomposition (SSD)
+result = diversify(
     embeddings=feed_embeddings,
     scores=feed_scores,
     k=10,
@@ -193,8 +194,8 @@ res = diversify(
     recent_embeddings=recent_feed_embeddings,
 )
 
-# Maintain the rolling context window (keep oldest→newest)
-recent_feed_embeddings = np.vstack([recent_feed_embeddings, feed_embeddings[res.indices]])
+# Maintain the rolling context window for recent items
+recent_feed_embeddings = np.vstack([recent_feed_embeddings, feed_embeddings[result.indices]])
 ```
 </details>
 
