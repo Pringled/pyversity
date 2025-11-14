@@ -210,6 +210,34 @@ def test_ssd() -> None:
     assert res.indices.size == 0 and res.selection_scores.size == 0
 
 
+def test_ssd_recent_embeddings_avoids_recent_first_pick() -> None:
+    """With equal relevance, the first pick should avoid the most recent item when context is seeded."""
+    # 3 orthogonal items (identity); equal scores
+    emb = np.eye(3, dtype=np.float32)
+    scores = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+
+    # Seed recent history with item 1 (oldest->newest)
+    recent = emb[[1]]  # the user just saw item 1
+    res = ssd(emb, scores, k=2, diversity=0.5, gamma=1.0, window=2, recent_embeddings=recent)
+
+    # First selection should not be the recent item (index 1) because its residual vs. context is ~0
+    assert res.indices[0] in (0, 2)
+    assert res.indices[0] != 1
+
+
+def test_ssd_recent_embeddings_window_blocks_multiple_recent() -> None:
+    """If the window contains two recent items, the first pick should avoid both when scores are tied."""
+    emb = np.eye(4, dtype=np.float32)
+    scores = np.ones(4, dtype=np.float32)  # tie
+
+    # Seed with items 0 and 1 (oldest->newest), window=2
+    recent = emb[[0, 1]]
+    res = ssd(emb, scores, k=3, diversity=0.6, gamma=1.0, window=2, recent_embeddings=recent)
+
+    # The first pick should be from {2,3}, not {0,1}
+    assert res.indices[0] in (2, 3)
+
+
 @pytest.mark.parametrize(
     "strategy, fn, kwargs",
     [
