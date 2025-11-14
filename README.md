@@ -19,7 +19,7 @@
 [Supported Strategies](#supported-strategies) •
 [Motivation](#motivation) •
 [Examples](#examples) •
-[References](#references) •
+[References](#references)
 
 </div>
 
