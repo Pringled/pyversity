@@ -71,7 +71,7 @@ The following table describes the supported strategies, how they work, their tim
 | **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
-| **SSD*** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to the last `w` picks via Gram–Schmidt residuals.     | **O(k · n · d)**          | Great for content feeds & infinite scroll, e.g. social/news/product feeds where users consume sequentially, as well as conversational RAG to avoid showing similar chunks within the recent window.
+| **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll, e.g. social/news/product feeds where users consume sequentially, as well as conversational RAG to avoid showing similar chunks within the recent window.
 
 
 ## Motivation
@@ -102,6 +102,9 @@ The implementations in this package are based on the following research papers:
 
 - **DPP (efficient greedy implementation)**: Chen, L., Zhang, G., & Zhou, H. (2018). Fast greedy MAP inference for determinantal point process to improve recommendation diversity.
 [Link](https://arxiv.org/pdf/1709.05135)
+
+- **SSD**: Huang, Y., Wang, W., Zhang, L., & Xu, R. (2021). Sliding Spectrum Decomposition for Diversified
+Recommendation. [Link](https://arxiv.org/pdf/2107.05204)
 
 ## Author
 
