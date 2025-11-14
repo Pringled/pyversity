@@ -18,7 +18,8 @@
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
 [Motivation](#motivation) •
-[Examples](#examples)
+[Examples](#examples) •
+[References](#references) •
 
 </div>
 
