@@ -88,6 +88,135 @@ This improves exploration, user satisfaction, and coverage across many domains, 
 - Academic retrieval: Surface papers from different subfields or methods.
 - RAG / LLM contexts: Avoid feeding the model near-duplicate passages.
 
+## Examples
+
+The following examples illustrate how to apply different diversification strategies in various scenarios.
+
+<details> <summary><b>Product / Web Search</b> — Simple diversification with MMR or DPP</summary> <br>
+
+MMR and DPP are great general-purpose diversification strategies. They are fast, easy to use, and work well in many scenarios.
+For example, in a product search setting where you want to show diverse items to a user, you can diversify the top results as follows:
+
+```python
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - item_embeddings: embeddings of the retrieved products
+# - item_scores: relevance scores for these products
+
+# Re-rank with MMR
+result = diversify(
+    embeddings=item_embeddings,
+    scores=item_scores,
+    k=10,
+    strategy=Strategy.MMR,
+)
+```
+</details>
+
+<details> <summary><b>Literature Search </b> — Represent the full topic space with COVER</summary> <br>
+
+COVER (Facility-Location) is well-suited for scenarios where you want to ensure that the selected items collectively represent the entire dataset’s structure. For instance, when searching for academic papers on a broad topic, you might want to cover various subfields and methodologies:
+
+```python
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - paper_embeddings: embeddings of the retrieved papers
+# - paper_scores: relevance scores for these papers
+
+# Re-rank with COVER
+result = diversify(
+    embeddings=paper_embeddings,
+    scores=paper_scores,
+    k=10,
+    strategy=Strategy.COVER,
+)
+```
+</details>
+
+<details>
+<summary><b>Conversational RAG</b> — Avoid redundant chunks with SSD</summary>
+<br>
+
+In retrieval-augmented generation (RAG) for conversational AI, it’s crucial to avoid feeding the model redundant or similar chunks of information within the recent conversation context. The SSD (Sliding Spectrum Decomposition) strategy is designed for sequence-aware diversification, making it ideal for this use case:
+
+```python
+import numpy as np
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - candidate_embeddings (for retrieved chunks this turn)
+# - candidate_scores (relevance scores for these chunks)
+# - recent_chunk_embeddings (chunks shown in the last few turns (oldest→newest)
+
+# Re-rank with SSD (sequence-aware)
+result = diversify(
+    embeddings=candidate_embeddings,
+    scores=candidate_scores,
+    k=10,
+    strategy=Strategy.SSD,
+    recent_embeddings=recent_chunk_embeddings,
+)
+
+picked_indices = result.indices
+picked_embeddings = candidate_embeddings[picked_indices]
+
+# Maintain your rolling context window (keep oldest→newest)
+recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, picked_embeddings])
+```
+</details>
+
+
+<details> <summary><b>Infinite Scroll / Recommendation Feed</b> — Sequence-aware novelty with SSD</summary> <br>
+
+In content feeds or infinite scroll scenarios, users consume items sequentially. To keep the experience engaging, it’s important to introduce novelty relative to recently shown items. The SSD strategy is well-suited for this:
+
+```python
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - feed_embeddings: embeddings of candidate items for the feed
+# - feed_scores: relevance scores for these items
+# - recent_feed_embeddings: embeddings of recently shown items in the feed (oldest→newest)
+
+# Re-rank with SSD (sequence-aware)
+res = diversify(
+    embeddings=feed_embeddings,
+    scores=feed_scores,
+    k=30,
+    strategy=Strategy.SSD,
+    recent_embeddings=recent_feed_embeddings,
+)
+
+# Maintain the rolling context window (keep oldest→newest)
+recent_feed_embeddings = np.vstack([recent_feed_embeddings, feed_embeddings[res.indices]])
+```
+</details>
+
+
+<details> <summary><b>Single Long Document</b> — Pick diverse sections with MSD</summary> <br>
+
+When summarizing or extracting information from a single long document, it’s beneficial to select sections that are both relevant and cover different parts of the document. The MSD strategy helps achieve this by preferring items that are far apart from each other:
+
+```python
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - doc_chunk_embembeddings: embeddings of document chunks
+# - doc_chunk_scores: relevance scores for these chunks
+
+# Re-rank with MSD
+result = diversify(
+    embeddings=doc_chunk_embeddings,
+    scores=doc_chunk_scores,
+    k=10,
+    strategy=Strategy.MSD,
+)
+```
+
+</details>
+
 ## References
 
 The implementations in this package are based on the following research papers:
