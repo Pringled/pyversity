@@ -188,7 +188,7 @@ from pyversity import diversify, Strategy
 res = diversify(
     embeddings=feed_embeddings,
     scores=feed_scores,
-    k=30,
+    k=10,
     strategy=Strategy.SSD,
     recent_embeddings=recent_feed_embeddings,
 )

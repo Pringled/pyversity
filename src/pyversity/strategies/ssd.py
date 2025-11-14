@@ -24,21 +24,20 @@ def ssd(  # noqa: C901
     If `recent_embeddings` are provided (oldest → newest), the window is seeded so the very first pick is
     already novel relative to what the user just saw.
 
-    Note: this is the implementation proposed in Equation 12 of the SSD paper, called SSD*.
+    Note: this follows the stabilized SSD variant (“SSD*”) described in Eq. (12) in the paper.
 
     :param embeddings: 2D array (n_items, n_dims) of candidate embeddings.
     :param scores: 1D array (n_items,) of relevance scores.
     :param k: Number of items to select.
     :param diversity: Trade-off between relevance and diversity in [0, 1] (inverse of theta parameter).
-        1.0 = pure diversity, 0.0 = pure relevance.
-    :param recent_embeddings: Optional 2D array (m, n_dims) with recent embeddings from oldest → newest.
-        seeds the sliding window so selection is aware of recent context.
-    :param window: Sliding window size (≥1) for Gram-Schmidt bases.
+                      1.0 = pure diversity, 0.0 = pure relevance.
+    :param recent_embeddings: Optional 2D array (m, n_dims), oldest → newest; seeds the sliding window so
+                              selection is aware of what was recently shown.
+    :param window: Sliding window size (≥ 1) for Gram-Schmidt bases.
     :param gamma: Diversity scale (> 0).
     :param normalize: Whether to normalize embeddings before computing similarity.
-    :param append_bias: Append constant-one bias dim after normalization.
-    :param normalize_scores: Z-score scores per request.
-
+    :param append_bias: Append a constant-one bias dimension after normalization.
+    :param normalize_scores: Z-score the scores per request (stabilizes the gamma trade-off).
     :return: DiversificationResult with selected indices and their selection scores.
     :raises ValueError: If diversity ∉ [0, 1], or window < 1, or gamma ≤ 0.
     """
@@ -50,8 +49,7 @@ def ssd(  # noqa: C901
     if gamma <= 0.0:
         raise ValueError("gamma must be > 0")
 
-    # Theta parameter for trade‑off between relevance and diversity
-    # This is 1 - diversity to align with common notation
+    # Theta parameter for trade-off between relevance and diversity (1 - diversity)
     theta = 1.0 - float(diversity)
 
     # Prepare inputs
@@ -65,6 +63,7 @@ def ssd(  # noqa: C901
             diversity=diversity,
             parameters={"gamma": gamma, "window": window},
         )
+
     # Validate recent_embeddings
     if recent_embeddings is not None and np.size(recent_embeddings) > 0:
         if recent_embeddings.ndim != 2:
@@ -75,34 +74,35 @@ def ssd(  # noqa: C901
                 f"expected {feature_matrix.shape[1]} to match `embeddings` columns."
             )
 
-    # Pure relevance: select top‑k by raw scores
+    # Pure relevance: select top-k by raw scores
     if float(theta) == 1.0:
         topk = np.argsort(-relevance_scores)[:top_k].astype(np.int32)
-        gains = relevance_scores[topk].astype(np.float32, copy=False)
+        selection_scores = relevance_scores[topk].astype(np.float32, copy=False)
         return DiversificationResult(
             indices=topk,
-            selection_scores=gains,
+            selection_scores=selection_scores,
             strategy=Strategy.SSD,
             diversity=diversity,
             parameters={"gamma": gamma, "window": window},
         )
 
     def _prepare_vectors(matrix: np.ndarray) -> np.ndarray:
-        """Prepare feature vectors with normalization and bias appending."""
-        out = matrix
+        """Prepare feature vectors with normalization and (optionally) a bias dimension."""
+        prepared = matrix
         if normalize:
-            out = normalize_rows(out)
+            prepared = normalize_rows(prepared)
         if append_bias:
-            # Append constant‑one bias dimension (see paper §5.3)
-            last_col_is_ones = (out.shape[1] > 0) and np.allclose(out[:, -1], 1.0, atol=1e-6, rtol=0.0)
+            # Bias trick described in the paper (Section 5.3)
+            last_col_is_ones = prepared.shape[1] > 0 and np.allclose(prepared[:, -1], 1.0, atol=1e-6, rtol=0.0)
             if not last_col_is_ones:
-                out = np.concatenate([out, np.ones((out.shape[0], 1), dtype=out.dtype)], axis=1)
-        return out
+                ones = np.ones((prepared.shape[0], 1), dtype=prepared.dtype)
+                prepared = np.concatenate([prepared, ones], axis=1)
+        return prepared
 
     # Prepare feature vectors
     feature_matrix = _prepare_vectors(feature_matrix)
 
-    # Normalize scores per request (to stabilize gamma)
+    # Per-request score normalization (stabilizes gamma)
     if normalize_scores:
         mean = float(np.mean(relevance_scores))
         std = float(np.std(relevance_scores))
@@ -120,54 +120,53 @@ def ssd(  # noqa: C901
 
     # Sliding window storage
     basis_vectors: list[np.ndarray] = []
-    projection_coeffs_per_basis: list[np.ndarray] = []
+    projection_coefficients_per_basis: list[np.ndarray] = []
 
-    def _push_basis_vector(basis_vec: np.ndarray) -> None:
-        """Add a new basis vector to the sliding window, updating residuals."""
+    def _push_basis_vector(basis_vector: np.ndarray) -> None:
+        """Add a new basis vector to the sliding window and update residuals/projections."""
         if len(basis_vectors) == window:
-            # If at capacity, remove oldest basis and restore its contribution to residuals
+            # Remove oldest basis and restore its contribution to residuals
             oldest_basis = basis_vectors.pop(0)
-            oldest_coeffs = projection_coeffs_per_basis.pop(0)
+            oldest_coefficients = projection_coefficients_per_basis.pop(0)
             mask_unselected = ~selected_mask
             if np.any(mask_unselected):
-                residual_matrix[mask_unselected] += oldest_coeffs[mask_unselected, None] * oldest_basis
+                residual_matrix[mask_unselected] += oldest_coefficients[mask_unselected, None] * oldest_basis
 
-        denom = float(basis_vec @ basis_vec) + EPS32
-        basis_vectors.append(basis_vec.astype(np.float32, copy=False))
+        denominator = float(basis_vector @ basis_vector) + EPS32
+        basis_vectors.append(basis_vector.astype(np.float32, copy=False))
+
         mask_unselected = ~selected_mask
-        coeffs = np.zeros(num_items, dtype=np.float32)
+        coefficients = np.zeros(num_items, dtype=np.float32)
         if np.any(mask_unselected):
-            # Compute projection coefficients and update residuals if unselected items remain
-            proj = (residual_matrix[mask_unselected] @ basis_vec) / denom
-            coeffs[mask_unselected] = proj
-            residual_matrix[mask_unselected] -= proj[:, None] * basis_vec
-        # Store the projection coefficients for later restoration
-        projection_coeffs_per_basis.append(coeffs)
+            projections = (residual_matrix[mask_unselected] @ basis_vector) / denominator
+            coefficients[mask_unselected] = projections
+            residual_matrix[mask_unselected] -= projections[:, None] * basis_vector
 
-    # Seed with recent context (oldest → newest)
-    context_seed = 0
+        projection_coefficients_per_basis.append(coefficients)
+
+    # Seed with recent context (oldest → newest) if provided
+    seeded_bases = 0
     if recent_embeddings is not None and np.size(recent_embeddings) > 0:
         context = _prepare_vectors(recent_embeddings.astype(feature_matrix.dtype, copy=False))
-        context = context[-window:]  # keep only the latest window items
-        for vec in context:
-            # Orthogonalize the context vector against current bases
-            residual_vec = vec.copy()
+        context = context[-window:]  # keep only the latest `window` items
+        for context_vector in context:
+            residual_context = context_vector.copy()
             for basis in basis_vectors:
-                denom_b = float(basis @ basis) + EPS32
-                residual_vec -= float(residual_vec @ basis) / denom_b * basis
-            _push_basis_vector(residual_vec)
-            context_seed += 1
+                denominator_b = float(basis @ basis) + EPS32
+                residual_context -= float(residual_context @ basis) / denominator_b * basis
+            _push_basis_vector(residual_context)
+            seeded_bases += 1
 
     # Decide what to select first
-    if context_seed > 0:
-        # If we seeded context, use the combined score immediately (novel vs. recent)
+    if seeded_bases > 0:
+        # Use combined scores with diversity from seeded context
         residual_norms = np.linalg.norm(residual_matrix, axis=1)
-        combined = theta * relevance_scores + (1.0 - theta) * gamma * residual_norms
-        combined[selected_mask] = -np.inf
-        first_index = int(np.argmax(combined))
-        first_score = float(combined[first_index])
+        combined_scores = theta * relevance_scores + (1.0 - theta) * gamma * residual_norms
+        combined_scores[selected_mask] = -np.inf
+        first_index = int(np.argmax(combined_scores))
+        first_score = float(combined_scores[first_index])
     else:
-        # No context yet: pick purely by relevance (then start residualization)
+        # No context yet: pick by highest relevance, then start residualization
         first_index = int(np.argmax(relevance_scores))
         first_score = float(
             theta * relevance_scores[first_index]
@@ -182,21 +181,21 @@ def ssd(  # noqa: C901
 
     # Main loop
     for step in range(1, top_k):
-        # Select next item by combined score
-        available = np.where(~selected_mask)[0]
-        if available.size == 0:
-            # No more items to select
+        # Find best candidate among unselected items
+        available_indices = np.where(~selected_mask)[0]
+        if available_indices.size == 0:
             selected_indices = selected_indices[:step]
             selection_scores = selection_scores[:step]
             break
 
-        residual_norms = np.linalg.norm(residual_matrix[available], axis=1)
-        combined_scores = theta * relevance_scores[available] + (1.0 - theta) * gamma * residual_norms
-        best_local = int(np.argmax(combined_scores))
-        best_index = int(available[best_local])
-        best_score = float(combined_scores[best_local])
+        # Residual norms measure novelty relative to the last `window` selections/context
+        residual_norms = np.linalg.norm(residual_matrix[available_indices], axis=1)
+        combined_scores = theta * relevance_scores[available_indices] + (1.0 - theta) * gamma * residual_norms
+        local_best = int(np.argmax(combined_scores))
+        best_index = int(available_indices[local_best])
+        best_score = float(combined_scores[local_best])
 
-        # Select the best item
+        # Update selection state
         selected_mask[best_index] = True
         selected_indices[step] = best_index
         selection_scores[step] = best_score
