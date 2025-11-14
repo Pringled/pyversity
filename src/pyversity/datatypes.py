@@ -11,6 +11,7 @@ class Strategy(str, Enum):
     MSD = "msd"
     COVER = "cover"
     DPP = "dpp"
+    SSD = "ssd"
 
 
 class Metric(str, Enum):

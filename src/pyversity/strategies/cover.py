@@ -14,7 +14,7 @@ def cover(
     normalize: bool = True,
 ) -> DiversificationResult:
     """
-    Select a subset of items that balances relevance and coverage/diversity.
+    Cover (Facility Location) selection.
 
     This strategy chooses `k` items by combining pure relevance with
     diversity-driven coverage using a concave submodular formulation.

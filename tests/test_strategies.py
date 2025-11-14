@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from pyversity import Metric, Strategy, cover, diversify, dpp, mmr, msd
 from pyversity.datatypes import DiversificationResult
+from pyversity.strategies import ssd
 
 
 def test_mmr() -> None:
@@ -175,6 +176,38 @@ def test_dpp() -> None:
     assert res.indices.size == 3
     assert np.all(res.selection_scores >= -1e-7)
     assert np.all(res.selection_scores[:-1] + 1e-7 >= res.selection_scores[1:])
+
+
+def test_ssd() -> None:
+    """Test SSD strategy with various diversity settings (1=diverse, 0=relevance)."""
+    emb = np.eye(3, dtype=np.float32)
+    scores = np.array([0.1, 0.8, 0.3], dtype=np.float32)
+
+    # Relevance-only (diversity=0): picks top-k by scores
+    res = ssd(emb, scores, k=2, diversity=0.0)
+    expected = np.array([1, 2], dtype=np.int32)
+    assert np.array_equal(res.indices, expected)
+    assert np.allclose(res.selection_scores, scores[expected])
+
+    # Balanced coverage (diversity=0.5, gamma=0.5): picks diverse set
+    res = ssd(emb, scores, k=2, diversity=0.5, gamma=0.5)
+    assert res.indices[0] == 1 and res.indices[1] in (0, 2)
+
+    # Parameter validation
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, diversity=-0.01)
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, diversity=1.01)
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, gamma=0.0)
+    with pytest.raises(ValueError):
+        ssd(emb, scores, k=2, gamma=-0.5)
+
+    # Early exit on empty input
+    emb = np.empty((0, 3), dtype=np.float32)
+    scores = np.array([], dtype=np.float32)
+    res = ssd(emb, scores, k=5)
+    assert res.indices.size == 0 and res.selection_scores.size == 0
 
 
 @pytest.mark.parametrize(

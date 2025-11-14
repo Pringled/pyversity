@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from pyversity.datatypes import DiversificationResult, Strategy
-from pyversity.strategies import cover, dpp, mmr, msd
+from pyversity.strategies import cover, dpp, mmr, msd, ssd
 
 
 def diversify(
@@ -36,4 +36,6 @@ def diversify(
         return cover(embeddings, scores, k, diversity, **kwargs)
     if strategy == Strategy.DPP:
         return dpp(embeddings, scores, k, diversity, **kwargs)
+    if strategy == Strategy.SSD:
+        return ssd(embeddings, scores, k, diversity, **kwargs)
     raise ValueError(f"Unknown strategy: {strategy}")
