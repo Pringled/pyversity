@@ -2,9 +2,8 @@ from typing import Any, Callable
 
 import numpy as np
 import pytest
-from pyversity import Metric, Strategy, cover, diversify, dpp, mmr, msd
+from pyversity import Metric, Strategy, cover, diversify, dpp, mmr, msd, ssd
 from pyversity.datatypes import DiversificationResult
-from pyversity.strategies import ssd
 
 
 def test_mmr() -> None:
