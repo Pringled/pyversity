@@ -150,24 +150,21 @@ import numpy as np
 from pyversity import diversify, Strategy
 
 # Suppose you have:
-# - candidate_embeddings (for retrieved chunks this turn)
-# - candidate_scores (relevance scores for these chunks)
+# - chunk_embeddings (for retrieved chunks this turn)
+# - chunk_scores (relevance scores for these chunks)
 # - recent_chunk_embeddings (chunks shown in the last few turns (oldest→newest)
 
 # Re-rank with SSD (sequence-aware)
 result = diversify(
-    embeddings=candidate_embeddings,
-    scores=candidate_scores,
+    embeddings=chunk_embeddings,
+    scores=chunk_scores,
     k=10,
     strategy=Strategy.SSD,
     recent_embeddings=recent_chunk_embeddings,
 )
 
-picked_indices = result.indices
-picked_embeddings = candidate_embeddings[picked_indices]
-
 # Maintain the rolling context window for recent chunks
-recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, picked_embeddings])
+recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, chunk_embeddings[result.indices]])
 ```
 </details>
 
@@ -208,7 +205,7 @@ When summarizing or extracting information from a single long document, it’s b
 from pyversity import diversify, Strategy
 
 # Suppose you have:
-# - doc_chunk_embbeddings: embeddings of document chunks
+# - doc_chunk_embeddings: embeddings of document chunks
 # - doc_chunk_scores: relevance scores for these chunks
 
 # Re-rank with MSD
