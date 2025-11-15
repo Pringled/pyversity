@@ -221,7 +221,7 @@ def test_ssd() -> None:
 
 
 def test_ssd_recent_embeddings_avoids_recent_first_pick() -> None:
-    """With equal relevance, the first pick should avoid the most recent item when context is seeded."""
+    """Test that with equal relevance, the first pick should avoid the most recent item when context is seeded."""
     # 3 orthogonal items (identity); equal scores
     emb = np.eye(3, dtype=np.float32)
     scores = np.array([0.5, 0.5, 0.5], dtype=np.float32)
@@ -236,7 +236,7 @@ def test_ssd_recent_embeddings_avoids_recent_first_pick() -> None:
 
 
 def test_ssd_recent_embeddings_window_blocks_multiple_recent() -> None:
-    """If the window contains two recent items, the first pick should avoid both when scores are tied."""
+    """Test that if the window contains two recent items, the first pick should avoid both when scores are tied."""
     emb = np.eye(4, dtype=np.float32)
     scores = np.ones(4, dtype=np.float32)  # tie
 
