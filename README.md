@@ -64,7 +64,6 @@ The returned `DiversificationResult` can be used to access the diversified `indi
 
 The `diversity` parameter tunes the trade-off between relevance and diversity: 0.0 focuses purely on relevance (no diversification), while 1.0 maximizes diversity, potentially at the cost of relevance.
 
-
 ## Supported Strategies
 
 The following table describes the supported strategies, how they work, their time complexity, and when to use them. The papers linked in the [references](#references) section provide more in-depth information on the strengths/weaknesses of the supported strategies.
