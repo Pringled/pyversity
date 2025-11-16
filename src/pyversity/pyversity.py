@@ -21,7 +21,7 @@ def diversify(
     :param scores: Scores (relevances) of the items to be diversified.
     :param k: The number of items to select for the diversified result.
     :param strategy: The diversification strategy to apply.
-      Supported strategies are: 'mmr' (default), 'msd', 'cover', and 'dpp'.
+      Supported strategies are: 'mmr' (default), 'msd', 'cover', 'dpp', and 'ssd'.
     :param diversity: Diversity parameter (range of [0, 1]). Higher values prioritize diversity and lower values prioritize relevance.
     :param **kwargs: Additional keyword arguments passed to the specific strategy function.
     :return: A DiversificationResult containing the selected item indices,
