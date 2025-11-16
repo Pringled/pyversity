@@ -247,6 +247,43 @@ def test_ssd_recent_embeddings_window_blocks_multiple_recent() -> None:
     assert res.indices[0] in (2, 3)
 
 
+def test_ssd_window_none_matches_large_window_when_recent_smaller() -> None:
+    """Test that window=None behaves like a large window when recent_embeddings is smaller than k."""
+    emb = np.eye(4, dtype=np.float32)
+    scores = np.ones(4, dtype=np.float32)
+    recent = emb[[0, 1]]
+    k = 3
+
+    res_none = ssd(
+        emb,
+        scores,
+        k=k,
+        window=None,
+        recent_embeddings=recent,
+    )
+    res_big = ssd(
+        emb,
+        scores,
+        k=k,
+        window=10,
+        recent_embeddings=recent,
+    )
+
+    assert np.array_equal(res_none.indices, res_big.indices)
+
+
+def test_ssd_window_none_equals_k_when_no_recent() -> None:
+    """Test that window=None behaves like window=k when recent_embeddings is not provided."""
+    emb = np.eye(5, dtype=np.float32)
+    scores = np.array([0.4, 0.9, 0.1, 0.7, 0.2], dtype=np.float32)
+    k = 3
+
+    res_none = ssd(emb, scores, k=k, window=None, recent_embeddings=None)
+    res_k = ssd(emb, scores, k=k, window=k, recent_embeddings=None)
+
+    assert np.array_equal(res_none.indices, res_k.indices)
+
+
 @pytest.mark.parametrize(
     "strategy, fn, kwargs",
     [
