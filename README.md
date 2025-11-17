@@ -269,3 +269,19 @@ Recommendation. [Link](https://arxiv.org/pdf/2107.05204)
 ## Author
 
 Thomas van Dongen
+
+## Citation
+
+If you use Pyversity in your research, please cite the following:
+
+```bibtex
+@software{van_dongen_2025_pyversity,
+  author       = {{van Dongen}, Thomas},
+  title        = {Pyversity: Fast Diversification for Search & Retrieval},
+  year         = {2025},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.17628015},
+  url          = {https://github.com/Pringled/pyversity},
+  license      = {MIT}
+}
+```

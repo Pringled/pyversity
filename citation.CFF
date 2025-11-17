@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use Pyversity in your research, please cite it as below."
+title: "Pyversity: Fast Diversification for Search & Retrieval"
+authors:
+  - family-names: "van Dongen"
+    given-names: "Thomas"
+doi: 10.5281/zenodo.17628015
+license: MIT
+url: "https://github.com/Pringled/pyversity"
+repository-code: "https://github.com/Pringled/pyversity"
+date-released: "2025-10-11"
+
+preferred-citation:
+  type: software
+  title: "Pyversity: Fast Diversification for Search & Retrieval"
+  authors:
+    - family-names: "van Dongen"
+      given-names: "Thomas"
+  year: 2025
+  publisher: Zenodo
+  doi: 10.5281/zenodo.17628015
+  url: "https://github.com/Pringled/pyversity"
+  license: MIT
