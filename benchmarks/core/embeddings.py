@@ -1,4 +1,4 @@
-"""Embedding generation and similarity computation."""
+"""Item embedding generation via SVD and similarity matrix computation."""
 
 import logging
 

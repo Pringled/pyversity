@@ -1,4 +1,4 @@
-"""Report generation for benchmark results."""
+"""Markdown report and plot generation from benchmark results."""
 
 from __future__ import annotations
 
@@ -13,24 +13,24 @@ STRATEGIES = ["mmr", "msd", "dpp", "ssd"]
 
 def _compute_retention_table(results: list[dict], retention_pct: float = 0.95) -> dict:
     """Compute diversity achieved at given relevance retention threshold."""
-    table: dict[str, dict] = {}
+    table: dict[str, dict[str, dict[str, float]]] = {}
 
     for dataset_result in results:
         dataset = dataset_result["dataset"]
         table[dataset] = {}
 
         for strategy in STRATEGIES:
-            runs = [r for r in dataset_result["results"] if r["strategy"] == strategy]
-            baseline = next((r for r in runs if r["diversity"] == 0.0), None)
+            runs = [run for run in dataset_result["results"] if run["strategy"] == strategy]
+            baseline = next((run for run in runs if run["diversity"] == 0.0), None)
 
             if not baseline:
                 continue
 
             threshold = baseline["ndcg@10"] * retention_pct
-            valid = [r for r in runs if r["ndcg@10"] >= threshold and r["diversity"] > 0]
+            valid = [run for run in runs if run["ndcg@10"] >= threshold and run["diversity"] > 0]
 
             if valid:
-                best = max(valid, key=lambda r: r["ilad"])
+                best = max(valid, key=lambda run: run["ilad"])
                 table[dataset][strategy] = {
                     "ilad": best["ilad"],
                     "lambda": best["diversity"],
@@ -42,8 +42,7 @@ def _compute_retention_table(results: list[dict], retention_pct: float = 0.95) -
 
 
 def _compute_regional_winners(results: list[dict]) -> dict:
-    """Compute which strategy wins in each diversity region."""
-    # Define diversity regions
+    """Compute which strategy achieves best nDCG in each diversity region."""
     regions = {
         "Low (0.3-0.5)": (0.3, 0.5),
         "Moderate (0.5-0.7)": (0.5, 0.7),
@@ -51,30 +50,28 @@ def _compute_regional_winners(results: list[dict]) -> dict:
         "Maximum (0.9+)": (0.9, 1.0),
     }
 
-    # Collect all points
     all_points = []
     for dataset_result in results:
         dataset = dataset_result["dataset"]
-        for r in dataset_result["results"]:
+        for run in dataset_result["results"]:
             all_points.append(
                 {
                     "dataset": dataset,
-                    "strategy": r["strategy"],
-                    "ndcg": r["ndcg@10"],
-                    "ilad": r["ilad"],
+                    "strategy": run["strategy"],
+                    "ndcg": run["ndcg@10"],
+                    "ilad": run["ilad"],
                 }
             )
 
-    # Find winner for each dataset/region
-    regional_data: dict[str, dict] = {}
-    datasets = sorted(set(p["dataset"] for p in all_points))
+    regional_data: dict[str, dict[str, dict[str, str | float]]] = {}
+    datasets = sorted(set(point["dataset"] for point in all_points))
 
     for dataset in datasets:
-        ds_points = [p for p in all_points if p["dataset"] == dataset]
+        dataset_points = [point for point in all_points if point["dataset"] == dataset]
         regional_data[dataset] = {}
 
         for region_name, (lo, hi) in regions.items():
-            in_region = [p for p in ds_points if lo <= p["ilad"] < hi]
+            in_region = [point for point in dataset_points if lo <= point["ilad"] < hi]
             if in_region:
                 best = max(in_region, key=lambda x: x["ndcg"])
                 regional_data[dataset][region_name] = {
@@ -83,11 +80,10 @@ def _compute_regional_winners(results: list[dict]) -> dict:
                     "ilad": best["ilad"],
                 }
 
-    # Aggregate wins per region
-    region_wins: dict[str, dict[str, int]] = {r: {} for r in regions}
+    region_wins: dict[str, dict[str, int]] = {region: {} for region in regions}
     for dataset, regions_dict in regional_data.items():
         for region_name, data in regions_dict.items():
-            winner = data["winner"]
+            winner = str(data["winner"])
             region_wins[region_name][winner] = region_wins[region_name].get(winner, 0) + 1
 
     return {"per_dataset": regional_data, "aggregate": region_wins}
@@ -95,37 +91,38 @@ def _compute_regional_winners(results: list[dict]) -> dict:
 
 def _compute_f1_scores(results: list[dict]) -> tuple[dict, dict]:
     """Compute normalized F1 scores (harmonic mean of nDCG and ILAD)."""
-    best_per_dataset: dict[str, dict] = {}
-    all_scores: list[dict] = []
+    best_per_dataset: dict[str, dict[str, dict[str, float]]] = {}
+    all_scores: list[dict[str, str | float]] = []
 
     for dataset_result in results:
         dataset = dataset_result["dataset"]
         best_per_dataset[dataset] = {}
 
-        # Get min/max for normalization within dataset
-        ndcgs = [r["ndcg@10"] for r in dataset_result["results"]]
-        ilads = [r["ilad"] for r in dataset_result["results"]]
+        ndcgs = [run["ndcg@10"] for run in dataset_result["results"]]
+        ilads = [run["ilad"] for run in dataset_result["results"]]
         ndcg_min, ndcg_max = min(ndcgs), max(ndcgs)
         ilad_min, ilad_max = min(ilads), max(ilads)
 
         for strategy in STRATEGIES:
-            runs = [r for r in dataset_result["results"] if r["strategy"] == strategy and 0 < r["diversity"] < 1]
+            runs = [
+                run for run in dataset_result["results"] if run["strategy"] == strategy and 0 < run["diversity"] < 1
+            ]
 
-            best_f1: float = 0.0
+            best_f1 = 0.0
             best_run = None
 
-            for r in runs:
-                ndcg_norm = (r["ndcg@10"] - ndcg_min) / (ndcg_max - ndcg_min) if ndcg_max > ndcg_min else 0
-                ilad_norm = (r["ilad"] - ilad_min) / (ilad_max - ilad_min) if ilad_max > ilad_min else 0
+            for run in runs:
+                ndcg_norm = (run["ndcg@10"] - ndcg_min) / (ndcg_max - ndcg_min) if ndcg_max > ndcg_min else 0.0
+                ilad_norm = (run["ilad"] - ilad_min) / (ilad_max - ilad_min) if ilad_max > ilad_min else 0.0
 
                 if ndcg_norm + ilad_norm > 0:
                     f1 = 2 * ndcg_norm * ilad_norm / (ndcg_norm + ilad_norm)
                 else:
-                    f1 = 0
+                    f1 = 0.0
 
                 if f1 > best_f1:
                     best_f1 = f1
-                    best_run = r
+                    best_run = run
 
             if best_run:
                 best_per_dataset[dataset][strategy] = {
@@ -136,10 +133,9 @@ def _compute_f1_scores(results: list[dict]) -> tuple[dict, dict]:
                 }
                 all_scores.append({"strategy": strategy, "f1": best_f1})
 
-    # Compute average F1 per strategy
     strategy_avg: dict[str, float] = {}
     for strategy in STRATEGIES:
-        scores: list[float] = [s["f1"] for s in all_scores if s["strategy"] == strategy]
+        scores = [float(entry["f1"]) for entry in all_scores if entry["strategy"] == strategy]
         strategy_avg[strategy] = sum(scores) / len(scores) if scores else 0.0
 
     return best_per_dataset, strategy_avg
@@ -192,11 +188,11 @@ def _format_ranking_table(f1_ranking: dict) -> list[str]:
         "mmr": "Conservative, relevance-focused",
         "ssd": "Conservative, relevance-focused",
     }
-    medals = {0: "🥇", 1: "🥈", 2: "🥉"}
+    rank_labels = {0: "1.", 1: "2.", 2: "3."}
 
-    for i, (strategy, score) in enumerate(sorted_ranking):
-        medal = medals.get(i, f"{i + 1}.")
-        lines.append(f"| {medal} | **{strategy.upper()}** | {score:.3f} | {interpretations.get(strategy, '')} |")
+    for idx, (strategy, score) in enumerate(sorted_ranking):
+        rank = rank_labels.get(idx, f"{idx + 1}.")
+        lines.append(f"| {rank} | **{strategy.upper()}** | {score:.3f} | {interpretations.get(strategy, '')} |")
 
     lines.append("")
     return lines
@@ -213,10 +209,10 @@ def _format_f1_details(f1_per_dataset: dict) -> list[str]:
     for dataset in sorted(f1_per_dataset.keys()):
         for strategy in STRATEGIES:
             if strategy in f1_per_dataset[dataset]:
-                d = f1_per_dataset[dataset][strategy]
+                entry = f1_per_dataset[dataset][strategy]
                 lines.append(
-                    f"| {dataset} | {strategy.upper()} | {d['lambda']:.1f} | "
-                    f"{d['ndcg']:.4f} | {d['ilad']:.3f} | {d['f1']:.3f} |"
+                    f"| {dataset} | {strategy.upper()} | {entry['lambda']:.1f} | "
+                    f"{entry['ndcg']:.4f} | {entry['ilad']:.3f} | {entry['f1']:.3f} |"
                 )
 
     lines.append("")
@@ -283,11 +279,11 @@ def _format_full_results(results: list[dict]) -> list[str]:
         lines.append("| Strategy | λ | nDCG@10 | MRR | ILAD | Latency |")
         lines.append("|----------|--:|--------:|----:|-----:|--------:|")
 
-        for r in sorted(dataset_result["results"], key=lambda x: (x["strategy"], x["diversity"])):
+        for run in sorted(dataset_result["results"], key=lambda x: (x["strategy"], x["diversity"])):
             lines.append(
-                f"| {r['strategy'].upper()} | {r['diversity']:.1f} | "
-                f"{r['ndcg@10']:.4f} | {r['mrr']:.4f} | {r['ilad']:.3f} | "
-                f"{r['latency_ms']:.2f}ms |"
+                f"| {run['strategy'].upper()} | {run['diversity']:.1f} | "
+                f"{run['ndcg@10']:.4f} | {run['mrr']:.4f} | {run['ilad']:.3f} | "
+                f"{run['latency_ms']:.2f}ms |"
             )
         lines.append("")
 
@@ -297,7 +293,6 @@ def _format_full_results(results: list[dict]) -> list[str]:
 
 def generate_markdown(results: list[dict]) -> str:
     """Generate markdown report content from benchmark results."""
-    # Compute analysis
     retention_table = _compute_retention_table(results, retention_pct=0.95)
     f1_per_dataset, f1_ranking = _compute_f1_scores(results)
     regional_data = _compute_regional_winners(results)
@@ -323,7 +318,6 @@ def generate_markdown(results: list[dict]) -> str:
         "",
     ]
 
-    # Add analysis tables
     md_lines.extend(_format_regional_analysis(regional_data))
     md_lines.extend(_format_retention_table(retention_table))
     md_lines.extend(_format_ranking_table(f1_ranking))
@@ -340,11 +334,10 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     axes = axes.flatten()
 
-    datasets = sorted(set(d["dataset"] for d in all_data))
+    datasets = sorted(set(point["dataset"] for point in all_data))
     strategies = ["mmr", "msd", "dpp", "ssd"]
     colors = {"mmr": "#e74c3c", "msd": "#2ecc71", "dpp": "#3498db", "ssd": "#9b59b6"}
 
-    # Clean dataset names for titles
     name_map = {
         "ml-32m": "MovieLens-32M",
         "lastfm": "Last.FM",
@@ -353,20 +346,21 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
     }
 
     for ax, dataset in zip(axes, datasets):
-        # Add shaded regions for diversity levels
         ax.axvspan(0.3, 0.5, alpha=0.1, color="blue", label="_Low")
         ax.axvspan(0.5, 0.7, alpha=0.1, color="green", label="_Moderate")
         ax.axvspan(0.7, 0.9, alpha=0.1, color="orange", label="_High")
         ax.axvspan(0.9, 1.0, alpha=0.1, color="red", label="_Max")
 
         for strategy in strategies:
-            points = [d for d in all_data if d["dataset"] == dataset and d["strategy"] == strategy]
-            points = sorted(points, key=lambda x: x["lambda"])
+            strategy_points = [p for p in all_data if p["dataset"] == dataset and p["strategy"] == strategy]
+            strategy_points = sorted(strategy_points, key=lambda x: x["lambda"])
 
-            if points:
-                x = [p["ilad"] for p in points]
-                y = [p["ndcg"] for p in points]
-                ax.plot(x, y, "o-", color=colors[strategy], label=strategy.upper(), markersize=7, linewidth=2.5)
+            if strategy_points:
+                x_vals = [p["ilad"] for p in strategy_points]
+                y_vals = [p["ndcg"] for p in strategy_points]
+                ax.plot(
+                    x_vals, y_vals, "o-", color=colors[strategy], label=strategy.upper(), markersize=7, linewidth=2.5
+                )
 
         ax.set_xlabel("ILAD (Diversity) →", fontsize=10)
         ax.set_ylabel("nDCG@10 (Relevance) →", fontsize=10)
@@ -375,13 +369,12 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
         ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xlim(0.25, 1.05)
 
-    # Add region labels to first subplot
-    ax0 = axes[0]
-    y_top = ax0.get_ylim()[1]
-    ax0.text(0.4, y_top * 0.95, "Low", ha="center", fontsize=8, color="blue", alpha=0.7)
-    ax0.text(0.6, y_top * 0.95, "Med", ha="center", fontsize=8, color="green", alpha=0.7)
-    ax0.text(0.8, y_top * 0.95, "High", ha="center", fontsize=8, color="orange", alpha=0.7)
-    ax0.text(0.95, y_top * 0.95, "Max", ha="center", fontsize=8, color="red", alpha=0.7)
+    first_ax = axes[0]
+    y_top = first_ax.get_ylim()[1]
+    first_ax.text(0.4, y_top * 0.95, "Low", ha="center", fontsize=8, color="blue", alpha=0.7)
+    first_ax.text(0.6, y_top * 0.95, "Med", ha="center", fontsize=8, color="green", alpha=0.7)
+    first_ax.text(0.8, y_top * 0.95, "High", ha="center", fontsize=8, color="orange", alpha=0.7)
+    first_ax.text(0.95, y_top * 0.95, "Max", ha="center", fontsize=8, color="red", alpha=0.7)
 
     plt.suptitle("Relevance vs Diversity Tradeoff by Strategy", fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
@@ -397,39 +390,38 @@ def generate_latency_plot(all_data: list[dict], output_path: Path) -> None:
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    datasets = sorted(set(d["dataset"] for d in all_data))
+    datasets = sorted(set(point["dataset"] for point in all_data))
     strategies = ["mmr", "msd", "dpp", "ssd"]
     colors = dict(zip(strategies, sns.color_palette("husl", len(strategies))))
 
-    # Average latency per strategy/dataset at λ=0.6
-    latency_data = {}
-    for d in all_data:
-        if d["lambda"] == 0.6:
-            key = (d["dataset"], d["strategy"])
-            latency_data[key] = d["latency_ms"]
+    latency_by_key: dict[tuple[str, str], float] = {}
+    for point in all_data:
+        if point["lambda"] == 0.6:
+            key = (point["dataset"], point["strategy"])
+            latency_by_key[key] = point["latency_ms"]
 
-    if not latency_data:
+    if not latency_by_key:
         plt.close()
         return
 
     x_labels: list[str] = []
-    bar_data: dict[str, list[float]] = {s: [] for s in strategies}
+    bar_data: dict[str, list[float]] = {strategy: [] for strategy in strategies}
 
     for dataset in datasets:
         x_labels.append(dataset)
         for strategy in strategies:
-            val = latency_data.get((dataset, strategy), 0)
-            bar_data[strategy].append(val)
+            latency = latency_by_key.get((dataset, strategy), 0.0)
+            bar_data[strategy].append(latency)
 
-    x = np.arange(len(x_labels))
-    width = 0.2
+    x_positions = np.arange(len(x_labels))
+    bar_width = 0.2
 
-    for i, (strategy, values) in enumerate(bar_data.items()):
-        ax.bar(x + i * width, values, width, label=strategy.upper(), color=colors[strategy])
+    for idx, (strategy, values) in enumerate(bar_data.items()):
+        ax.bar(x_positions + idx * bar_width, values, bar_width, label=strategy.upper(), color=colors[strategy])
 
     ax.set_ylabel("Latency (ms)")
     ax.set_title("Latency Comparison at λ=0.6")
-    ax.set_xticks(x + width * 1.5)
+    ax.set_xticks(x_positions + bar_width * 1.5)
     ax.set_xticklabels(x_labels, rotation=45, ha="right")
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
@@ -440,40 +432,37 @@ def generate_latency_plot(all_data: list[dict], output_path: Path) -> None:
 
 
 def generate_report(results_dir: Path) -> None:
-    """Generate full report from JSON results in a directory."""
+    """Generate markdown report and plots from JSON results."""
     results = []
-    for path in results_dir.glob("*.json"):
-        with open(path) as f:
+    for json_path in results_dir.glob("*.json"):
+        with open(json_path) as f:
             results.append(json.load(f))
 
     if not results:
         logger.warning("No results found.")
         return
 
-    # Collect all data points
     all_data = []
     for dataset_result in results:
         dataset = dataset_result["dataset"]
-        for r in dataset_result["results"]:
+        for run in dataset_result["results"]:
             all_data.append(
                 {
                     "dataset": dataset,
-                    "strategy": r["strategy"],
-                    "lambda": r["diversity"],
-                    "ndcg": r["ndcg@10"],
-                    "mrr": r["mrr"],
-                    "ilad": r["ilad"],
-                    "latency_ms": r["latency_ms"],
+                    "strategy": run["strategy"],
+                    "lambda": run["diversity"],
+                    "ndcg": run["ndcg@10"],
+                    "mrr": run["mrr"],
+                    "ilad": run["ilad"],
+                    "latency_ms": run["latency_ms"],
                 }
             )
 
-    # Generate markdown
     md_content = generate_markdown(results)
     report_path = results_dir / "RESULTS.md"
     report_path.write_text(md_content)
     logger.debug(f"Saved: {report_path}")
 
-    # Generate plots
     pareto_path = results_dir / "pareto.png"
     generate_pareto_plot(all_data, pareto_path)
     logger.debug(f"Saved: {pareto_path}")

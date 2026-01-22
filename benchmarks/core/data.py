@@ -1,4 +1,4 @@
-"""Data loading and preprocessing."""
+"""Dataset loading, preprocessing, and registry for benchmark evaluation."""
 
 from __future__ import annotations
 

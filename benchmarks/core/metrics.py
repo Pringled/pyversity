@@ -1,11 +1,11 @@
-"""Evaluation metrics."""
+"""Relevance and diversity metrics for recommendation evaluation."""
 
 import numpy as np
 from numpy.typing import NDArray
 
 
 def mrr(recommendations: NDArray[np.int64], relevant: NDArray[np.int64]) -> float:
-    """Mean Reciprocal Rank."""
+    """Compute Mean Reciprocal Rank."""
     relevant_set = set(relevant)
     for rank, item in enumerate(recommendations, start=1):
         if item in relevant_set:
@@ -14,7 +14,7 @@ def mrr(recommendations: NDArray[np.int64], relevant: NDArray[np.int64]) -> floa
 
 
 def ndcg(recommendations: NDArray[np.int64], relevant: NDArray[np.int64], k: int = 10) -> float:
-    """Normalized Discounted Cumulative Gain at k."""
+    """Compute Normalized Discounted Cumulative Gain at k."""
     relevant_set = set(relevant)
     recommendations = recommendations[:k]
 
@@ -25,7 +25,7 @@ def ndcg(recommendations: NDArray[np.int64], relevant: NDArray[np.int64], k: int
 
 
 def ilad(item_ids: NDArray[np.int64], embeddings: NDArray[np.float32]) -> float:
-    """Intra-List Average Distance (diversity)."""
+    """Compute Intra-List Average Distance (average pairwise dissimilarity)."""
     if len(item_ids) < 2:
         return 0.0
 
@@ -38,7 +38,7 @@ def ilad(item_ids: NDArray[np.int64], embeddings: NDArray[np.float32]) -> float:
 
 
 def ilmd(item_ids: NDArray[np.int64], embeddings: NDArray[np.float32]) -> float:
-    """Intra-List Minimum Distance (worst-case diversity)."""
+    """Compute Intra-List Minimum Distance (minimum pairwise dissimilarity)."""
     if len(item_ids) < 2:
         return 0.0
 

@@ -1,4 +1,4 @@
-"""Benchmark configuration."""
+"""Benchmark configuration dataclass with defaults for all parameters."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -8,7 +8,12 @@ from pyversity import Strategy
 
 @dataclass
 class BenchmarkConfig:
-    """Configuration for benchmark runs."""
+    """
+    Configuration for benchmark runs.
+
+    All parameters have sensible defaults. Only `dataset` must be specified
+    before running a benchmark.
+    """
 
     # Dataset (name from registry or DatasetInfo)
     dataset: str | None = None

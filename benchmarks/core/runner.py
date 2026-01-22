@@ -1,4 +1,4 @@
-"""Main benchmark runner."""
+"""Core benchmark execution logic."""
 
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ def _evaluate_user(
     config: BenchmarkConfig,
     rng: np.random.Generator,
 ) -> list[dict]:
-    """Evaluate all strategies for a single user."""
+    """Evaluate all strategies for a single user using leave-one-out."""
     # Get user's items
     mask = data.user_ids == user_id
     profile = data.item_ids[mask]
@@ -155,7 +155,7 @@ def _evaluate_user(
 
 
 def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dict]:
-    """Aggregate per-user results into summary statistics."""
+    """Aggregate per-user results by strategy/diversity into mean and std."""
     from collections import defaultdict
 
     groups = defaultdict(list)
@@ -183,9 +183,10 @@ def _print_summary(results: list[dict]) -> None:
     print(f"{'Strategy':<10} {'λ':>5} {'nDCG@10':>10} {'ILAD':>10} {'Latency':>10}")  # noqa: T201
     print("-" * 60)  # noqa: T201
 
-    for r in results:
+    for row in results:
         print(  # noqa: T201
-            f"{r['strategy']:<10} {r['diversity']:>5.1f} {r['ndcg@10']:>10.4f} {r['ilad']:>10.4f} {r['latency_ms']:>9.2f}ms"
+            f"{row['strategy']:<10} {row['diversity']:>5.1f} "
+            f"{row['ndcg@10']:>10.4f} {row['ilad']:>10.4f} {row['latency_ms']:>9.2f}ms"
         )
 
 
