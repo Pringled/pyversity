@@ -30,14 +30,14 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 
 ### Overall Results
 
-| Strategy | Combined Score | Best ILAD | Best ILMD |
-|----------|:--------------:|:---------:|:---------:|
-| **DPP**  | **0.439**      | 0.75      | **0.26**  |
-| SSD      | 0.236          | 0.62      | 0.17      |
-| MSD      | 0.226          | **0.78**  | 0.15      |
-| MMR      | 0.213          | 0.58      | 0.18      |
+| Strategy | Combined Score | ILAD | ILMD |
+|----------|:--------------:|:----:|:----:|
+| **DPP**  | **0.439**      | 0.75 | **0.26** |
+| SSD      | 0.236          | 0.62 | 0.17 |
+| MSD      | 0.226          | **0.78** | 0.15 |
+| MMR      | 0.213          | 0.58 | 0.18 |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Best ILAD/ILMD = average across datasets while maintaining ≥95% baseline relevance.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains relative to baseline (higher = better). ILAD/ILMD = values at best operating point, averaged across datasets while maintaining ≥95% baseline relevance.*
 
 **DPP wins overall** by balancing both ILAD (variety) and ILMD (no duplicates). MSD achieves highest ILAD but at the cost of ILMD.
 
@@ -47,7 +47,7 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 |------|----------|:-----------:|-------|
 | **Best overall balance** | **DPP** | 0.8-0.9 | Wins both overall and ILMD |
 | **Maximum diversity** | **MSD** | 0.5-0.6 | Best ILAD while keeping relevance |
-| **Avoid similar pairs** | **DPP** | 0.8-0.9 | Strictest duplicate avoidance |
+| **Avoid similar pairs** | **DPP** | 0.8-0.9 | Best at preventing near-duplicates |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
 | **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
 
@@ -176,7 +176,7 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 
 ### Experimental Setup
 
-- **Evaluation**: Leave-one-out protocol with 2,000 sampled users per dataset
+- **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=20 items selected by each strategy
@@ -193,9 +193,9 @@ We use a **relevance floor** approach to ensure fair comparison:
    - **Max ILMD**: Best worst-case diversity (no similar pairs)
    - **Best Combined**: Geometric mean of normalized ILAD and ILMD gains
 
-The **Combined Score** normalizes gains per dataset:
-- `ILAD_gain = (ILAD - ILAD_min) / (ILAD_max - ILAD_min)`
-- `ILMD_gain = (ILMD - ILMD_min) / (ILMD_max - ILMD_min)`
+The **Combined Score** normalizes gains relative to baseline (λ=0):
+- `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_max - ILAD_baseline)`
+- `ILMD_gain = (ILMD - ILMD_baseline) / (ILMD_max - ILMD_baseline)`
 - `Combined = sqrt(ILAD_gain × ILMD_gain)`
 
 This ensures a strategy must improve *both* metrics to score well—high only if both improve.
@@ -205,7 +205,7 @@ This ensures a strategy must improve *both* metrics to score well—high only if
 | Metric | Type | Description |
 |--------|------|-------------|
 | **ILAD** | Average | Mean pairwise distance—measures overall variety |
-| **ILMD** | Minimum | Minimum pairwise distance—ensures no similar pairs |
+| **ILMD** | Minimum | Min pairwise distance—best at preventing near-duplicates |
 
 Both are computed as `1 - cosine_similarity` between item embeddings.
 

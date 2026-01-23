@@ -52,11 +52,19 @@ def _compute_relevance_budgeted_scores(
 
         ndcg_floor = RELEVANCE_FLOOR * baseline_ndcg
 
-        # Find min/max for normalization
-        all_ilad = [p["ilad"] for p in dataset_points]
-        all_ilmd = [p["ilmd"] for p in dataset_points]
-        ilad_min, ilad_max = min(all_ilad), max(all_ilad)
-        ilmd_min, ilmd_max = min(all_ilmd), max(all_ilmd)
+        # Find baseline (lambda=0) and max for normalization
+        ilad_baseline = (
+            min(p["ilad"] for p in dataset_points if p["lambda"] == 0.0)
+            if any(p["lambda"] == 0.0 for p in dataset_points)
+            else min(p["ilad"] for p in dataset_points)
+        )
+        ilmd_baseline = (
+            min(p["ilmd"] for p in dataset_points if p["lambda"] == 0.0)
+            if any(p["lambda"] == 0.0 for p in dataset_points)
+            else min(p["ilmd"] for p in dataset_points)
+        )
+        ilad_max = max(p["ilad"] for p in dataset_points)
+        ilmd_max = max(p["ilmd"] for p in dataset_points)
 
         # Filter to feasible configs (above relevance floor)
         feasible = [p for p in dataset_points if p["ndcg"] >= ndcg_floor]
@@ -66,8 +74,8 @@ def _compute_relevance_budgeted_scores(
 
         results[dataset] = {}
 
-        # Goal 1: Max ILAD
-        best_ilad = max(feasible, key=lambda x: x["ilad"])
+        # Goal 1: Max ILAD (tie-break by higher nDCG, lower lambda)
+        best_ilad = max(feasible, key=lambda x: (x["ilad"], x["ndcg"], -x["lambda"]))
         results[dataset]["max_ilad"] = {
             "strategy": best_ilad["strategy"],
             "lambda": best_ilad["lambda"],
@@ -77,8 +85,8 @@ def _compute_relevance_budgeted_scores(
             "ilmd": best_ilad["ilmd"],
         }
 
-        # Goal 2: Max ILMD
-        best_ilmd = max(feasible, key=lambda x: x["ilmd"])
+        # Goal 2: Max ILMD (tie-break by higher nDCG, lower lambda)
+        best_ilmd = max(feasible, key=lambda x: (x["ilmd"], x["ndcg"], -x["lambda"]))
         results[dataset]["max_ilmd"] = {
             "strategy": best_ilmd["strategy"],
             "lambda": best_ilmd["lambda"],
@@ -88,17 +96,18 @@ def _compute_relevance_budgeted_scores(
             "ilmd": best_ilmd["ilmd"],
         }
 
-        # Goal 3: Best combined (geometric mean of normalized gains)
+        # Goal 3: Best combined (geometric mean of normalized gains relative to baseline)
         def combined_score(point: dict) -> float:
-            ilad_range = ilad_max - ilad_min
-            ilmd_range = ilmd_max - ilmd_min
+            ilad_range = ilad_max - ilad_baseline
+            ilmd_range = ilmd_max - ilmd_baseline
             if ilad_range == 0 or ilmd_range == 0:
                 return 0.0
-            ilad_gain = (point["ilad"] - ilad_min) / ilad_range
-            ilmd_gain = (point["ilmd"] - ilmd_min) / ilmd_range
+            ilad_gain = (point["ilad"] - ilad_baseline) / ilad_range
+            ilmd_gain = (point["ilmd"] - ilmd_baseline) / ilmd_range
             return (ilad_gain * ilmd_gain) ** 0.5  # Geometric mean
 
-        best_combined = max(feasible, key=combined_score)
+        # Tie-break by higher nDCG, lower lambda
+        best_combined = max(feasible, key=lambda p: (combined_score(p), p["ndcg"], -p["lambda"]))
         results[dataset]["best_combined"] = {
             "strategy": best_combined["strategy"],
             "lambda": best_combined["lambda"],
@@ -115,7 +124,7 @@ def _compute_relevance_budgeted_scores(
 def _get_dataset_baseline_and_bounds(
     dataset_points: list[dict],
 ) -> tuple[float, float, float, float, float] | None:
-    """Get baseline nDCG and normalization bounds for a dataset."""
+    """Get baseline nDCG and normalization bounds (baseline, not min) for a dataset."""
     baseline_ndcg = 0.0
     for strategy in STRATEGIES:
         strategy_points = [p for p in dataset_points if p["strategy"] == strategy]
@@ -126,23 +135,36 @@ def _get_dataset_baseline_and_bounds(
     if baseline_ndcg == 0:
         return None
 
-    all_ilad = [p["ilad"] for p in dataset_points]
-    all_ilmd = [p["ilmd"] for p in dataset_points]
-    ilad_min, ilad_max = float(min(all_ilad)), float(max(all_ilad))
-    ilmd_min, ilmd_max = float(min(all_ilmd)), float(max(all_ilmd))
+    # Use baseline (lambda=0) values, not min
+    has_baseline = any(p["lambda"] == 0.0 for p in dataset_points)
+    if has_baseline:
+        ilad_baseline = float(min(p["ilad"] for p in dataset_points if p["lambda"] == 0.0))
+        ilmd_baseline = float(min(p["ilmd"] for p in dataset_points if p["lambda"] == 0.0))
+    else:
+        ilad_baseline = float(min(p["ilad"] for p in dataset_points))
+        ilmd_baseline = float(min(p["ilmd"] for p in dataset_points))
 
-    if ilad_max == ilad_min or ilmd_max == ilmd_min:
+    ilad_max = float(max(p["ilad"] for p in dataset_points))
+    ilmd_max = float(max(p["ilmd"] for p in dataset_points))
+
+    if ilad_max == ilad_baseline or ilmd_max == ilmd_baseline:
         return None
 
-    return baseline_ndcg, ilad_min, ilad_max, ilmd_min, ilmd_max
+    return baseline_ndcg, ilad_baseline, ilad_max, ilmd_baseline, ilmd_max
 
 
 def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, float]]:
-    """Compute per-strategy aggregate scores across all datasets."""
+    """
+    Compute per-strategy aggregate scores across all datasets.
+
+    Returns combined score, ILAD/ILMD at best operating point, nDCG retention, and typical diversity.
+    """
     datasets = sorted(set(p["dataset"] for p in all_data))
     strategy_scores: dict[str, list[float]] = {s: [] for s in STRATEGIES}
     strategy_ilads: dict[str, list[float]] = {s: [] for s in STRATEGIES}
     strategy_ilmds: dict[str, list[float]] = {s: [] for s in STRATEGIES}
+    strategy_ndcg_ret: dict[str, list[float]] = {s: [] for s in STRATEGIES}
+    strategy_lambdas: dict[str, list[float]] = {s: [] for s in STRATEGIES}
 
     for dataset in datasets:
         dataset_points = [p for p in all_data if p["dataset"] == dataset]
@@ -150,14 +172,14 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
         if bounds is None:
             continue
 
-        baseline_ndcg, ilad_min, ilad_max, ilmd_min, ilmd_max = bounds
+        baseline_ndcg, ilad_baseline, ilad_max, ilmd_baseline, ilmd_max = bounds
         ndcg_floor = RELEVANCE_FLOOR * baseline_ndcg
-        ilad_range = ilad_max - ilad_min
-        ilmd_range = ilmd_max - ilmd_min
+        ilad_range = ilad_max - ilad_baseline
+        ilmd_range = ilmd_max - ilmd_baseline
 
         def combined_score(point: dict) -> float:
-            ilad_gain = (point["ilad"] - ilad_min) / ilad_range
-            ilmd_gain = (point["ilmd"] - ilmd_min) / ilmd_range
+            ilad_gain = (point["ilad"] - ilad_baseline) / ilad_range
+            ilmd_gain = (point["ilmd"] - ilmd_baseline) / ilmd_range
             return (ilad_gain * ilmd_gain) ** 0.5
 
         for strategy in STRATEGIES:
@@ -166,10 +188,13 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
             if not feasible:
                 continue
 
-            best_point = max(feasible, key=combined_score)
+            # Select best point with tie-breaker
+            best_point = max(feasible, key=lambda p: (combined_score(p), p["ndcg"], -p["lambda"]))
             strategy_scores[strategy].append(combined_score(best_point))
             strategy_ilads[strategy].append(best_point["ilad"])
             strategy_ilmds[strategy].append(best_point["ilmd"])
+            strategy_ndcg_ret[strategy].append(best_point["ndcg"] / baseline_ndcg)
+            strategy_lambdas[strategy].append(best_point["lambda"])
 
     # Aggregate across datasets
     scorecard: dict[str, dict[str, float]] = {}
@@ -178,10 +203,14 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
             scores = strategy_scores[strategy]
             ilads = strategy_ilads[strategy]
             ilmds = strategy_ilmds[strategy]
+            ndcg_rets = strategy_ndcg_ret[strategy]
+            lambdas = strategy_lambdas[strategy]
             scorecard[strategy] = {
                 "combined_score": sum(scores) / len(scores),
-                "best_ilad": sum(ilads) / len(ilads),
-                "best_ilmd": sum(ilmds) / len(ilmds),
+                "ilad_at_best": sum(ilads) / len(ilads),
+                "ilmd_at_best": sum(ilmds) / len(ilmds),
+                "ndcg_retention": sum(ndcg_rets) / len(ndcg_rets),
+                "typical_diversity": sum(lambdas) / len(lambdas),
             }
 
     return scorecard
@@ -326,14 +355,15 @@ def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
     # Strategy scorecard
     scorecard = _compute_strategy_scorecard(all_data)
     logger.info("\n=== Strategy Scorecard (averaged across datasets) ===")
-    logger.info("| Strategy | Combined Score | Best ILAD | Best ILMD |")
-    logger.info("|----------|----------------|-----------|-----------|")
+    logger.info("| Strategy | Combined | ILAD | ILMD | nDCG Ret | Typical diversity |")
+    logger.info("|----------|----------|------|------|----------|-------------------|")
 
     sorted_strategies = sorted(scorecard.items(), key=lambda x: x[1]["combined_score"], reverse=True)
     for strategy, scores in sorted_strategies:
         logger.info(
-            f"| {strategy.upper():8} | {scores['combined_score']:.3f}          | "
-            f"{scores['best_ilad']:.2f}      | {scores['best_ilmd']:.2f}      |"
+            f"| {strategy.upper():8} | {scores['combined_score']:.3f}    | "
+            f"{scores['ilad_at_best']:.2f} | {scores['ilmd_at_best']:.2f} | "
+            f"{scores['ndcg_retention']:.1%}    | {scores['typical_diversity']:.1f}               |"
         )
 
     # Summary
