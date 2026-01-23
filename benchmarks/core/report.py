@@ -233,7 +233,9 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
         ax.set_xlabel(f"{metric_label} →", fontsize=10)
         ax.set_ylabel("nDCG@10 (Relevance) →", fontsize=10)
         ax.set_title(name_map.get(dataset, dataset), fontsize=12, fontweight="bold")
-        ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
+        # ILAD data is mostly on the right, ILMD data more spread out
+        legend_loc = "upper left" if diversity_metric == "ilad" else "upper right"
+        ax.legend(loc=legend_loc, fontsize=9, framealpha=0.9)
         ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xlim(0.0, 1.05)
 
