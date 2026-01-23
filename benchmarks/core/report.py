@@ -239,8 +239,11 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
         ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xlim(0.0, 1.05)
 
-    title_suffix = "(Average Diversity)" if diversity_metric == "ilad" else "(Minimum Diversity)"
-    plt.suptitle(f"Relevance vs Diversity Tradeoff {title_suffix}", fontsize=14, fontweight="bold", y=1.02)
+    if diversity_metric == "ilad":
+        title = "Relevance vs Average Pairwise Diversity (nDCG@10 vs ILAD)"
+    else:
+        title = "Relevance vs Minimum Pairwise Diversity (nDCG@10 vs ILMD)"
+    plt.suptitle(title, fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
     fig.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close()
