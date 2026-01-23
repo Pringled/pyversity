@@ -47,14 +47,16 @@ The Pareto area measures the relevance-diversity tradeoff quality by computing t
 
 ### Recommendations
 
-| Goal | Strategy | λ | Why |
-|-----------|----------|---|-----|
+| Goal | Strategy | diversity | Why |
+|-----------|----------|-----------|-----|
 | Balanced tradeoff | **DPP** | 0.4-0.6 | Highest combined Pareto area |
-| Maximum relevance, light diversity | **SSD** | 0.7-0.9 | Best nDCG at low diversity |
-| High average diversity | **MSD** | 0.3-0.5 | Dominates ILAD metric |
-| No similar pairs (strict) | **DPP** | 0.3-0.5 | Best ILMD scores |
-| Extreme diversity | **MSD** | 0.1-0.3 | Only strategy reaching ILAD > 0.9 |
-| Simple baseline | **MMR** | 0.5-0.7 | Easy to implement and tune |
+| Maximum relevance, light diversity | **SSD** | 0.1-0.3 | Best nDCG at low diversity |
+| High average diversity | **MSD** | 0.5-0.7 | Dominates ILAD metric |
+| No similar pairs (strict) | **DPP** | 0.5-0.7 | Best ILMD scores |
+| Extreme diversity | **MSD** | 0.7-0.9 | Only strategy reaching ILAD > 0.9 |
+| Simple baseline | **MMR** | 0.3-0.5 | Easy to implement and tune |
+
+*`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
 ## Relevance-Diversity Tradeoff
 
@@ -152,7 +154,7 @@ python -m benchmarks report
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=20 items selected by each strategy
-- **λ sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
+- **diversity sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
 <details>
 <summary>Programmatic API</summary>
