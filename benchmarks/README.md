@@ -28,7 +28,7 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance** (see [Methodology](#methodology) for details).
 
-### Strategy Performance
+### Overall Results
 
 | Strategy | Combined Score | Best ILAD | Best ILMD |
 |----------|:--------------:|:---------:|:---------:|
@@ -39,20 +39,14 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 
 *Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Best ILAD/ILMD = average across datasets while maintaining ≥95% baseline relevance.*
 
-### Summary
-
-| Goal | Winner | Why |
-|------|--------|-----|
-| **Best Overall** | **DPP** | Highest combined diversity (both ILAD and ILMD) |
-| **Max ILAD** (overall variety) | **MSD** | Optimizes sum of pairwise distances |
-| **Max ILMD** (no similar pairs) | **DPP** | Best worst-case diversity guarantee |
+**DPP wins overall** by balancing both ILAD (variety) and ILMD (no duplicates). MSD achieves highest ILAD but at the cost of ILMD.
 
 ### Recommendations
 
 | Goal | Strategy | `diversity` | Notes |
 |------|----------|:-----------:|-------|
 | **Best overall balance** | **DPP** | 0.8-0.9 | Wins both overall and ILMD |
-| **Maximum variety** | **MSD** | 0.5-0.6 | Best ILAD while keeping relevance |
+| **Maximum diversity** | **MSD** | 0.5-0.6 | Best ILAD while keeping relevance |
 | **Avoid similar pairs** | **DPP** | 0.8-0.9 | Strictest duplicate avoidance |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
 | **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
@@ -114,16 +108,8 @@ python -m benchmarks report
 
 ## Detailed Results
 
-### Strategies
-
-| Strategy | Description | Complexity |
-|----------|-------------|------------|
-| **MMR** | Maximal Marginal Relevance | O(k·n) |
-| **MSD** | Max-Sum Diversification | O(k·n) |
-| **DPP** | Determinantal Point Process | O(k²·n) |
-| **SSD** | Sliding Spectrum Decomposition | O(k²·n·d) |
-
-### Per-Dataset Best Configs (≥95% baseline nDCG)
+<details>
+<summary>Per-Dataset Best Configs (≥95% baseline nDCG)</summary>
 
 | Dataset | Max ILAD | Max ILMD | Best Overall |
 |---------|:--------:|:--------:|:------------:|
@@ -131,6 +117,8 @@ python -m benchmarks report
 | Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 | Amazon-VG | MSD (`diversity`=0.5) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
 | Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
+
+</details>
 
 <details>
 <summary>Per-Dataset Detailed Metrics</summary>
