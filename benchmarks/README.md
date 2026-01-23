@@ -29,21 +29,33 @@ We evaluate using two diversity metrics that capture different aspects:
 - **ILAD** (Intra-List Average Distance): Measures overall diversity spread
 - **ILMD** (Intra-List Minimum Distance): Ensures no very similar item pairs (worst-case diversity)
 
-### Pareto Area Under Curve
+### Dataset Wins by Region
 
-The Pareto area measures the relevance-diversity tradeoff quality by computing the area under each strategy's curve in the **diversification region** (diversity ≥ 0.3). Higher = better.
+We count how many datasets each strategy achieves the highest nDCG in each diversity region:
 
-| Strategy | nDCG vs ILAD | nDCG vs ILMD | Combined | Notes |
-|----------|:------------:|:------------:|:--------:|-------|
-| **DPP**  | 0.042        | 0.036        | **0.039** | Best overall balance |
-| **MSD**  | **0.046**    | 0.010        | 0.028    | Best for ILAD (overall variety) |
-| **SSD**  | 0.041        | 0.019        | 0.030    | Good balance |
-| **MMR**  | 0.038        | 0.029        | 0.033    | Simple baseline |
+**ILAD (Average Diversity):**
 
-**Key insight:** The "best" strategy depends on your diversity metric:
-- **DPP** wins on combined score—best overall tradeoff
-- **MSD** dominates ILAD—great for maximum variety, but poor ILMD (allows similar pairs)
-- **DPP** is best for ILMD—ensures no very similar pairs slip through
+| Region   | Range     | MMR | MSD | DPP | SSD | Best   |
+|----------|-----------|:---:|:---:|:---:|:---:|--------|
+| Low      | 0.3-0.5   | 0   | 1   | 1   | 1   | Tied   |
+| Moderate | 0.5-0.7   | 0   | 2   | 1   | 0   | **MSD** |
+| High     | 0.7-0.9   | 1   | 3   | 0   | 0   | **MSD** |
+
+**ILMD (Minimum Diversity):**
+
+| Region   | Range       | MMR | MSD | DPP | SSD | Best   |
+|----------|-------------|:---:|:---:|:---:|:---:|--------|
+| Low      | 0.05-0.15   | 1   | 0   | 2   | 0   | **DPP** |
+| Moderate | 0.15-0.25   | 1   | 0   | 1   | 0   | Tied   |
+| High     | 0.25-0.35   | 1   | 0   | 3   | 0   | **DPP** |
+
+**Total Wins:** DPP (8) > MSD (6) > MMR (4) > SSD (1)
+
+**Key insight:**
+- **DPP** wins overall—best at balancing relevance with ILMD (no similar pairs)
+- **MSD** dominates ILAD—best when you want maximum variety
+- **MMR** is a solid baseline with wins across regions
+- **SSD** shines in sequence-aware settings (see note below)
 
 > **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
 > **sequence-aware** diversification with `recent_embeddings`—it rewards novelty relative to
@@ -54,11 +66,10 @@ The Pareto area measures the relevance-diversity tradeoff quality by computing t
 
 | Goal | Strategy | diversity | Why |
 |-----------|----------|-----------|-----|
-| Balanced tradeoff | **DPP** | 0.4-0.6 | Highest combined Pareto area |
-| Maximum relevance, light diversity | **SSD** | 0.1-0.3 | Best nDCG at low diversity |
-| High average diversity | **MSD** | 0.5-0.7 | Dominates ILAD metric |
-| No similar pairs (strict) | **DPP** | 0.5-0.7 | Best ILMD scores |
-| Extreme diversity | **MSD** | 0.7-0.9 | Only strategy reaching ILAD > 0.9 |
+| Maximum variety | **MSD** | 0.7-1.0 | Dominates ILAD across all regions |
+| Avoid similar pairs | **DPP** | 0.5-0.8 | Best ILMD wins, balances relevance |
+| Balanced tradeoff | **DPP** | 0.4-0.6 | Most total wins (8), good on both metrics |
+| Sequence-aware feeds | **SSD** | 0.3-0.5 | Use with `recent_embeddings` |
 | Simple baseline | **MMR** | 0.3-0.5 | Easy to implement and tune |
 
 *`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
@@ -133,12 +144,12 @@ python -m benchmarks report
 
 ### Per-Dataset Winners (by ILAD region)
 
-| Dataset | Low (0.3-0.5) | Moderate (0.5-0.7) | High (0.7-0.9) | Max (0.9+) |
-|---------|:-------------:|:------------------:|:--------------:|:----------:|
-| MovieLens-32M | SSD | DPP | MSD | - |
-| Last.FM | SSD | MSD | MSD | MSD |
-| Amazon-VG | - | - | MMR | MSD |
-| Goodreads | SSD | MSD | MSD | MSD |
+| Dataset | Low (0.3-0.5) | Moderate (0.5-0.7) | High (0.7-0.9) |
+|---------|:-------------:|:------------------:|:--------------:|
+| MovieLens-32M | DPP | DPP | MSD |
+| Last.FM | SSD | MSD | MSD |
+| Amazon-VG | - | - | MMR |
+| Goodreads | MSD | MSD | MSD |
 
 *Raw JSON results are in `results/*.json`*
 
