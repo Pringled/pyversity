@@ -188,8 +188,3 @@ def _print_summary(results: list[dict]) -> None:
             f"{row['strategy']:<10} {row['diversity']:>5.1f} "
             f"{row['ndcg@10']:>10.4f} {row['ilad']:>10.4f} {row['latency_ms']:>9.2f}ms"
         )
-
-
-if __name__ == "__main__":
-    # For direct testing - requires dataset to be specified
-    run_benchmark(BenchmarkConfig(dataset="ml-32m"))

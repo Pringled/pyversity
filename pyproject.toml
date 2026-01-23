@@ -43,6 +43,7 @@ dev = [
     "pytest",
     "pytest-coverage",
     "ruff",
+    "types-requests",
 ]
 benchmarks = [
     "datasets",

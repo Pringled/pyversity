@@ -70,11 +70,13 @@ def cmd_download() -> None:
                 zf.extractall(DATA_DIR)
             zip_path.unlink()
 
-            # Handle nested directories
-            for d in DATA_DIR.iterdir():
-                if d.is_dir() and d != dest_dir:
-                    if name in d.name or (name == "lastfm" and "hetrec" in d.name.lower()):
-                        d.rename(dest_dir)
+            # Rename extracted directory (zip may extract to different name)
+            for extracted_dir in DATA_DIR.iterdir():
+                if extracted_dir.is_dir() and extracted_dir != dest_dir:
+                    # Match by dataset name or known aliases
+                    dir_name_lower = extracted_dir.name.lower()
+                    if name in dir_name_lower or (name == "lastfm" and "hetrec" in dir_name_lower):
+                        extracted_dir.rename(dest_dir)
                         break
 
             logger.info(f"Saved {name} to {dest_dir}")
