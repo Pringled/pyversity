@@ -193,18 +193,21 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
     name_map = {
         "ml-32m": "MovieLens-32M",
         "lastfm": "Last.FM",
-        "amazon-product-reviews-video-games": "Amazon Video Games",
-        "goodreads-rating": "Goodreads",
+        "amazon-video-games": "Amazon Video Games",
+        "goodreads": "Goodreads",
     }
 
     metric_label = "ILAD (Avg Diversity)" if diversity_metric == "ilad" else "ILMD (Min Diversity)"
 
-    for ax, dataset in zip(axes, datasets):
-        ax.axvspan(0.3, 0.5, alpha=0.1, color="blue", label="_Low")
-        ax.axvspan(0.5, 0.7, alpha=0.1, color="green", label="_Moderate")
-        ax.axvspan(0.7, 0.9, alpha=0.1, color="orange", label="_High")
-        ax.axvspan(0.9, 1.0, alpha=0.1, color="red", label="_Max")
+    # Use seaborn styling
+    try:
+        import seaborn as sns
 
+        sns.set_theme(style="whitegrid", palette="muted")
+    except ImportError:
+        pass  # Fall back to matplotlib defaults
+
+    for ax, dataset in zip(axes, datasets):
         for strategy in strategies:
             strategy_points = [p for p in all_data if p["dataset"] == dataset and p["strategy"] == strategy]
             strategy_points = sorted(strategy_points, key=lambda x: x["lambda"])
@@ -223,13 +226,6 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
         ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xlim(0.0, 1.05)
 
-    first_ax = axes[0]
-    y_top = first_ax.get_ylim()[1]
-    first_ax.text(0.4, y_top * 0.95, "Low", ha="center", fontsize=8, color="blue", alpha=0.7)
-    first_ax.text(0.6, y_top * 0.95, "Med", ha="center", fontsize=8, color="green", alpha=0.7)
-    first_ax.text(0.8, y_top * 0.95, "High", ha="center", fontsize=8, color="orange", alpha=0.7)
-    first_ax.text(0.95, y_top * 0.95, "Max", ha="center", fontsize=8, color="red", alpha=0.7)
-
     title_suffix = "(Average Diversity)" if diversity_metric == "ilad" else "(Minimum Diversity)"
     plt.suptitle(f"Relevance vs Diversity Tradeoff {title_suffix}", fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
@@ -243,6 +239,14 @@ def generate_latency_plot(output_path: Path) -> None:
 
     from benchmarks.core.latency import run_latency_benchmark
 
+    # Use seaborn styling
+    try:
+        import seaborn as sns
+
+        sns.set_theme(style="whitegrid", palette="muted")
+    except ImportError:
+        pass  # Fall back to matplotlib defaults
+
     logger.info("Running synthetic latency benchmark...")
     results = run_latency_benchmark()
 
@@ -250,7 +254,6 @@ def generate_latency_plot(output_path: Path) -> None:
 
     strategies = ["mmr", "msd", "dpp", "ssd"]
     colors = {"mmr": "#e74c3c", "msd": "#2ecc71", "dpp": "#3498db", "ssd": "#9b59b6"}
-    linestyles = {"mmr": "-", "msd": "--", "dpp": "-.", "ssd": "-"}
     markers = {"mmr": "o", "msd": "s", "dpp": "^", "ssd": "D"}
 
     for strategy in strategies:
@@ -264,7 +267,6 @@ def generate_latency_plot(output_path: Path) -> None:
             x_vals,
             y_vals,
             color=colors[strategy],
-            linestyle=linestyles[strategy],
             marker=markers[strategy],
             label=strategy.upper(),
             markersize=8,
@@ -292,8 +294,8 @@ def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
     name_map = {
         "ml-32m": "MovieLens-32M",
         "lastfm": "Last.FM",
-        "amazon-product-reviews-video-games": "Amazon Video Games",
-        "goodreads-rating": "Goodreads",
+        "amazon-video-games": "Amazon Video Games",
+        "goodreads": "Goodreads",
     }
 
     logger.info("\nBest configs per dataset (maintaining ≥95% baseline relevance):")
