@@ -8,6 +8,14 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
+def _setup_plot_style() -> None:
+    """Set up seaborn styling for plots."""
+    import seaborn as sns
+
+    sns.set_theme(style="whitegrid", palette="muted")
+
+
 STRATEGIES = ["mmr", "msd", "dpp", "ssd"]
 
 # Relevance floor: keep configs with at least this fraction of baseline nDCG
@@ -183,6 +191,8 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
     """Generate Pareto frontier plot showing relevance vs diversity tradeoff."""
     import matplotlib.pyplot as plt
 
+    _setup_plot_style()
+
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     axes = axes.flatten()
 
@@ -198,14 +208,6 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
     }
 
     metric_label = "ILAD (Avg Diversity)" if diversity_metric == "ilad" else "ILMD (Min Diversity)"
-
-    # Use seaborn styling
-    try:
-        import seaborn as sns
-
-        sns.set_theme(style="whitegrid", palette="muted")
-    except ImportError:
-        pass  # Fall back to matplotlib defaults
 
     for ax, dataset in zip(axes, datasets):
         for strategy in strategies:
@@ -239,13 +241,7 @@ def generate_latency_plot(output_path: Path) -> None:
 
     from benchmarks.core.latency import run_latency_benchmark
 
-    # Use seaborn styling
-    try:
-        import seaborn as sns
-
-        sns.set_theme(style="whitegrid", palette="muted")
-    except ImportError:
-        pass  # Fall back to matplotlib defaults
+    _setup_plot_style()
 
     logger.info("Running synthetic latency benchmark...")
     results = run_latency_benchmark()
