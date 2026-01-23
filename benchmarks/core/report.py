@@ -276,14 +276,13 @@ def _format_full_results(results: list[dict]) -> list[str]:
     for dataset_result in sorted(results, key=lambda x: x["dataset"]):
         dataset = dataset_result["dataset"]
         lines.append(f"### {dataset}\n")
-        lines.append("| Strategy | λ | nDCG@10 | MRR | ILAD | Latency |")
-        lines.append("|----------|--:|--------:|----:|-----:|--------:|")
+        lines.append("| Strategy | λ | nDCG@10 | MRR | ILAD | ILMD |")
+        lines.append("|----------|--:|--------:|----:|-----:|-----:|")
 
         for run in sorted(dataset_result["results"], key=lambda x: (x["strategy"], x["diversity"])):
             lines.append(
                 f"| {run['strategy'].upper()} | {run['diversity']:.1f} | "
-                f"{run['ndcg@10']:.4f} | {run['mrr']:.4f} | {run['ilad']:.3f} | "
-                f"{run['latency_ms']:.2f}ms |"
+                f"{run['ndcg@10']:.4f} | {run['mrr']:.4f} | {run['ilad']:.3f} | {run['ilmd']:.3f} |"
             )
         lines.append("")
 
@@ -382,52 +381,48 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
     plt.close()
 
 
-def generate_latency_plot(all_data: list[dict], output_path: Path) -> None:
-    """Generate latency comparison bar chart."""
+def generate_latency_plot(output_path: Path) -> None:
+    """Generate latency scaling plot using synthetic benchmark."""
     import matplotlib.pyplot as plt
-    import numpy as np
-    import seaborn as sns
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    from benchmarks.core.latency import run_latency_benchmark
 
-    datasets = sorted(set(point["dataset"] for point in all_data))
+    logger.info("Running synthetic latency benchmark...")
+    results = run_latency_benchmark()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
     strategies = ["mmr", "msd", "dpp", "ssd"]
-    colors = dict(zip(strategies, sns.color_palette("husl", len(strategies))))
+    colors = {"mmr": "#e74c3c", "msd": "#2ecc71", "dpp": "#3498db", "ssd": "#9b59b6"}
+    linestyles = {"mmr": "-", "msd": "--", "dpp": "-.", "ssd": "-"}
+    markers = {"mmr": "o", "msd": "s", "dpp": "^", "ssd": "D"}
 
-    latency_by_key: dict[tuple[str, str], float] = {}
-    for point in all_data:
-        if point["lambda"] == 0.6:
-            key = (point["dataset"], point["strategy"])
-            latency_by_key[key] = point["latency_ms"]
+    for strategy in strategies:
+        points = [r for r in results if r["strategy"] == strategy]
+        points = sorted(points, key=lambda x: x["n_candidates"])
 
-    if not latency_by_key:
-        plt.close()
-        return
+        x_vals = [p["n_candidates"] for p in points]
+        y_vals = [p["latency_ms"] for p in points]
 
-    x_labels: list[str] = []
-    bar_data: dict[str, list[float]] = {strategy: [] for strategy in strategies}
+        ax.plot(
+            x_vals,
+            y_vals,
+            color=colors[strategy],
+            linestyle=linestyles[strategy],
+            marker=markers[strategy],
+            label=strategy.upper(),
+            markersize=8,
+            linewidth=2.5,
+        )
 
-    for dataset in datasets:
-        x_labels.append(dataset)
-        for strategy in strategies:
-            latency = latency_by_key.get((dataset, strategy), 0.0)
-            bar_data[strategy].append(latency)
-
-    x_positions = np.arange(len(x_labels))
-    bar_width = 0.2
-
-    for idx, (strategy, values) in enumerate(bar_data.items()):
-        ax.bar(x_positions + idx * bar_width, values, bar_width, label=strategy.upper(), color=colors[strategy])
-
-    ax.set_ylabel("Latency (ms)")
-    ax.set_title("Latency Comparison at λ=0.6")
-    ax.set_xticks(x_positions + bar_width * 1.5)
-    ax.set_xticklabels(x_labels, rotation=45, ha="right")
-    ax.legend()
-    ax.grid(axis="y", alpha=0.3)
+    ax.set_xlabel("Number of Candidates (n)", fontsize=11)
+    ax.set_ylabel("Latency (ms)", fontsize=11)
+    ax.set_title("Latency Scaling by Strategy (k=10, d=256)", fontsize=12, fontweight="bold")
+    ax.legend(loc="upper left", fontsize=10)
+    ax.grid(True, alpha=0.3, linestyle="--")
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close()
 
 
@@ -454,7 +449,6 @@ def generate_report(results_dir: Path) -> None:
                     "ndcg": run["ndcg@10"],
                     "mrr": run["mrr"],
                     "ilad": run["ilad"],
-                    "latency_ms": run["latency_ms"],
                 }
             )
 
@@ -468,7 +462,7 @@ def generate_report(results_dir: Path) -> None:
     logger.debug(f"Saved: {pareto_path}")
 
     latency_path = results_dir / "latency.png"
-    generate_latency_plot(all_data, latency_path)
+    generate_latency_plot(latency_path)
     logger.debug(f"Saved: {latency_path}")
 
     logger.info(f"Report generated: {results_dir}")

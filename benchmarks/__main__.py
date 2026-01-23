@@ -114,6 +114,14 @@ def cmd_report() -> None:
     generate_report(RESULTS_DIR)
 
 
+def cmd_latency() -> None:
+    """Run latency benchmark and generate plot."""
+    from benchmarks.core.report import generate_latency_plot
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    generate_latency_plot(RESULTS_DIR / "latency.png")
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -124,7 +132,7 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["download", "run", "report"],
+        choices=["download", "run", "report", "latency"],
         default=None,
         help="Command to run (default: run)",
     )
@@ -137,6 +145,8 @@ def main() -> None:
         cmd_run()
     elif args.command == "report":
         cmd_report()
+    elif args.command == "latency":
+        cmd_latency()
     else:
         # Default: run
         cmd_run()

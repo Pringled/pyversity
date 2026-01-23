@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 from datetime import datetime, timezone
 
 import numpy as np
@@ -128,7 +127,6 @@ def _evaluate_user(
 
     for strategy in config.strategies:
         for diversity in config.diversity_values:
-            start = time.perf_counter()
             result = pyversity.diversify(
                 embeddings=candidate_embeddings,
                 scores=relevance_scores,
@@ -136,14 +134,12 @@ def _evaluate_user(
                 strategy=strategy,
                 diversity=diversity,
             )
-            latency_ms = (time.perf_counter() - start) * 1000
 
             selected = candidate_ids[result.indices]
             results.append(
                 {
                     "strategy": strategy.value,
                     "diversity": diversity,
-                    "latency_ms": latency_ms,
                     "mrr": mrr(selected, test_items),
                     "ndcg@10": ndcg(selected, test_items, k=10),
                     "ilad": ilad(selected, embeddings),
@@ -166,7 +162,7 @@ def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dic
     aggregated = []
     for (strategy, diversity), group in sorted(groups.items()):
         agg = {"strategy": strategy, "diversity": diversity}
-        for metric in ["mrr", "ndcg@10", "ilad", "ilmd", "latency_ms"]:
+        for metric in ["mrr", "ndcg@10", "ilad", "ilmd"]:
             values = [r[metric] for r in group]
             agg[metric] = float(np.mean(values))
             agg[f"{metric}_std"] = float(np.std(values))
@@ -177,14 +173,14 @@ def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dic
 
 def _print_summary(results: list[dict]) -> None:
     """Print summary table (uses print for table formatting)."""
-    print("\n" + "=" * 60)  # noqa: T201
+    print("\n" + "=" * 55)  # noqa: T201
     print("RESULTS SUMMARY")  # noqa: T201
-    print("=" * 60)  # noqa: T201
-    print(f"{'Strategy':<10} {'λ':>5} {'nDCG@10':>10} {'ILAD':>10} {'Latency':>10}")  # noqa: T201
-    print("-" * 60)  # noqa: T201
+    print("=" * 55)  # noqa: T201
+    print(f"{'Strategy':<10} {'λ':>5} {'nDCG@10':>10} {'MRR':>10} {'ILAD':>10}")  # noqa: T201
+    print("-" * 55)  # noqa: T201
 
     for row in results:
         print(  # noqa: T201
             f"{row['strategy']:<10} {row['diversity']:>5.1f} "
-            f"{row['ndcg@10']:>10.4f} {row['ilad']:>10.4f} {row['latency_ms']:>9.2f}ms"
+            f"{row['ndcg@10']:>10.4f} {row['mrr']:>10.4f} {row['ilad']:>10.4f}"
         )

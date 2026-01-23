@@ -59,6 +59,21 @@ python -m benchmarks report
 | **DPP** | Determinantal Point Process | O(k²·n) |
 | **SSD** | Sliding Spectrum Decomposition | O(k²·n) |
 
+### Latency
+
+All strategies are very fast in practice. With 100 candidates and 256d embeddings (typical for modern embedding models), selecting k=10 items:
+
+| Strategy | Latency | Notes |
+|----------|---------|-------|
+| MMR | ~0.1ms | Fastest |
+| MSD | ~0.1ms | Fastest |
+| DPP | ~0.1ms | Fast |
+| SSD | ~0.5ms | Scales with embedding dimension |
+
+![Latency vs Candidates](results/latency.png)
+
+**Note:** All strategies scale linearly with `k` (items to select). MMR/MSD are O(k·n), while DPP/SSD are O(k²·n). Additionally, SSD has an O(d) factor due to Gram-Schmidt orthogonalization—if you use higher-dimensional embeddings (512d, 768d, etc.), SSD latency increases proportionally. For typical reranking scenarios (100-1000 candidates), all strategies complete in under 10ms.
+
 ### Metrics
 
 | Metric | Type | Description |
