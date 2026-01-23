@@ -45,6 +45,11 @@ The Pareto area measures the relevance-diversity tradeoff quality by computing t
 - **MSD** dominates ILAD—great for maximum variety, but poor ILMD (allows similar pairs)
 - **DPP** is best for ILMD—ensures no very similar pairs slip through
 
+> **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
+> **sequence-aware** diversification with `recent_embeddings`—it rewards novelty relative to
+> recently shown items. For content feeds, infinite scroll, or conversational RAG where you
+> maintain a sliding window of recent items, SSD may outperform these results.
+
 ### Recommendations
 
 | Goal | Strategy | diversity | Why |
