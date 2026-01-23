@@ -132,6 +132,71 @@ python -m benchmarks report
 | Amazon-VG | MSD (`diversity`=0.5) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
 | Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 
+</details>
+
+<details>
+<summary>Per-Dataset Detailed Metrics</summary>
+
+The tables below show best achievable metrics per strategy while maintaining ≥95% of baseline nDCG.
+
+#### MovieLens-32M
+
+| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
+|----------|:----------------:|:----:|:----:|:----:|:--------:|
+| **DPP**  | 0.9              | 0.052 | 0.67 | 0.25 | **0.46** |
+| SSD      | 0.8              | 0.054 | 0.58 | 0.18 | 0.32     |
+| MSD      | 0.5              | 0.055 | 0.64 | 0.10 | 0.25     |
+| MMR      | 0.7              | 0.056 | 0.54 | 0.14 | 0.27     |
+
+#### Last.FM
+
+| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
+|----------|:----------------:|:----:|:----:|:----:|:--------:|
+| **DPP**  | 0.8              | 0.151 | 0.73 | 0.19 | **0.37** |
+| SSD      | 0.9              | 0.152 | 0.55 | 0.12 | 0.18     |
+| MSD      | 0.6              | 0.154 | 0.84 | 0.10 | 0.22     |
+| MMR      | 0.8              | 0.155 | 0.57 | 0.15 | 0.19     |
+
+#### Amazon Video Games
+
+| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
+|----------|:----------------:|:----:|:----:|:----:|:--------:|
+| **DPP**  | 0.9              | 0.306 | 0.92 | 0.47 | **0.68** |
+| SSD      | 0.8              | 0.298 | 0.85 | 0.31 | 0.38     |
+| MSD      | 0.5              | 0.269 | 0.96 | 0.37 | 0.32     |
+| MMR      | 0.8              | 0.285 | 0.72 | 0.31 | 0.27     |
+
+#### Goodreads
+
+| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
+|----------|:----------------:|:----:|:----:|:----:|:--------:|
+| **DPP**  | 0.8              | 0.027 | 0.67 | 0.14 | **0.24** |
+| SSD      | 0.9              | 0.026 | 0.50 | 0.08 | 0.10     |
+| MSD      | 0.5              | 0.027 | 0.78 | 0.08 | 0.13     |
+| MMR      | 0.7              | 0.028 | 0.50 | 0.10 | 0.12     |
+
+*Combined = geometric mean of normalized ILAD and ILMD gains*
+
+</details>
+
+<details>
+<summary>How Combined Score is Computed</summary>
+
+For each dataset, we normalize ILAD and ILMD gains to [0, 1]:
+
+```
+ILAD_gain = (ILAD - ILAD_min) / (ILAD_max - ILAD_min)
+ILMD_gain = (ILMD - ILMD_min) / (ILMD_max - ILMD_min)
+Combined = sqrt(ILAD_gain × ILMD_gain)
+```
+
+The geometric mean ensures a strategy must improve *both* metrics to score well. The final Combined Score in the scorecard is the average across all 4 datasets.
+
+Example for DPP on Amazon Video Games:
+- ILAD_gain ≈ 0.83 (high overall variety)
+- ILMD_gain ≈ 0.55 (good worst-case diversity)
+- Combined = sqrt(0.83 × 0.55) ≈ 0.68
+
 *Raw JSON results are in `results/*.json`*
 
 </details>
