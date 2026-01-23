@@ -209,6 +209,8 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
 
     metric_label = "ILAD (Avg Diversity)" if diversity_metric == "ilad" else "ILMD (Min Diversity)"
 
+    markers = {"mmr": "o", "msd": "s", "dpp": "^", "ssd": "D"}
+
     for ax, dataset in zip(axes, datasets):
         for strategy in strategies:
             strategy_points = [p for p in all_data if p["dataset"] == dataset and p["strategy"] == strategy]
@@ -218,7 +220,14 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
                 x_vals = [p[diversity_metric] for p in strategy_points]
                 y_vals = [p["ndcg"] for p in strategy_points]
                 ax.plot(
-                    x_vals, y_vals, "o-", color=colors[strategy], label=strategy.upper(), markersize=7, linewidth=2.5
+                    x_vals,
+                    y_vals,
+                    color=colors[strategy],
+                    marker=markers[strategy],
+                    label=strategy.upper(),
+                    markersize=7,
+                    linewidth=2.5,
+                    alpha=0.8,
                 )
 
         ax.set_xlabel(f"{metric_label} →", fontsize=10)
