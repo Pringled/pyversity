@@ -43,7 +43,7 @@ The Pareto area measures the relevance-diversity tradeoff quality by computing t
 **Key insight:** The "best" strategy depends on your diversity metric:
 - **DPP** wins on combined score—best overall tradeoff
 - **MSD** dominates ILAD—great for maximum variety, but poor ILMD (allows similar pairs)
-- **SSD/DPP** better ensure no very similar pairs slip through
+- **DPP** is best for ILMD—ensures no very similar pairs slip through
 
 ### Recommendations
 
