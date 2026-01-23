@@ -3,27 +3,51 @@
 Comprehensive evaluation of diversification strategies across 4 recommendation datasets.
 We measure the relevance-diversity tradeoff to help you choose the right strategy for your use case.
 
-## Key Finding
+## Table of Contents
+
+- [Key Findings](#key-findings)
+- [Relevance-Diversity Tradeoff](#relevance-diversity-tradeoff)
+- [Latency](#latency)
+- [Usage](#usage)
+- [Datasets](#datasets)
+- [Methodology](#methodology)
+- [Citations](#citations)
+
+## Key Findings
 
 **Different strategies excel at different diversity levels:**
 
-| Diversity Level | Winner | Recommendation |
-|-----------------|--------|----------------|
-| Low (ILAD 0.3-0.5) | **SSD** | Best for light diversification |
-| Moderate (ILAD 0.5-0.7) | **MSD/DPP** | Good middle-ground |
-| High (ILAD 0.7-0.9) | **MSD** | Best for heavy diversification |
-| Maximum (ILAD 0.9+) | **MSD** | Dominates at extreme diversity |
+| Diversity Level | Winner | λ | Notes |
+|-----------------|--------|---|-------|
+| Low (ILAD 0.3-0.5) | **SSD** | 0.6-0.8 | Highest relevance at light diversification |
+| Moderate (ILAD 0.5-0.7) | **MSD/DPP** | 0.4-0.6 | Good middle-ground |
+| High (ILAD 0.7-0.9) | **MSD** | 0.4-0.6 | Best for heavy diversification |
+| Maximum (ILAD 0.9+) | **MSD** | 0.2-0.4 | Dominates at extreme diversity |
+
+## Relevance-Diversity Tradeoff
 
 ![Relevance vs Diversity Tradeoff](results/pareto.png)
 
-## Quick Recommendations
+## Latency
 
-| Your Goal | Strategy | λ | Notes |
-|-----------|----------|---|-------|
-| Light diversification | **SSD** | 0.6-0.8 | Highest relevance at moderate diversity |
-| Balanced tradeoff | **DPP** | 0.4-0.6 | Good across multiple diversity levels |
-| Maximum diversity | **MSD** | 0.4-0.6 | Best when diversity is the priority |
-| Speed-critical | **MMR** | 0.6-0.8 | Fastest (O(k·n) complexity) |
+All strategies are extremely fast in practice. The plot below shows latency scaling with the number of candidates (k=10, d=256):
+
+![Latency vs Candidates](results/latency.png)
+
+**Key observations:**
+- **All strategies are very fast**: Even with 10,000 candidates, all strategies complete in under 100ms
+- **Typical use case**: With 100 candidates (common for reranking), all strategies complete in <1ms
+- **MMR/MSD/DPP** are nearly identical in speed for practical candidate sizes
+- **SSD** is slower due to Gram-Schmidt orthogonalization—scales with embedding dimension d
+
+| Strategy | 100 candidates | 1,000 candidates | 10,000 candidates |
+|----------|----------------|------------------|-------------------|
+| MMR | ~0.1ms | ~1ms | ~10ms |
+| MSD | ~0.1ms | ~1ms | ~10ms |
+| DPP | ~0.1ms | ~2ms | ~20ms |
+| SSD | ~0.5ms | ~5ms | ~80ms |
+
+*Measured with k=10 items selected, d=256 dimensional embeddings.*
 
 ## Usage
 
@@ -41,15 +65,6 @@ python -m benchmarks report
 <details>
 <summary>Detailed Results</summary>
 
-### Datasets
-
-| Dataset | Domain | Interactions | Source |
-|---------|--------|--------------|--------|
-| MovieLens-32M | Movies | 32M ratings | [GroupLens](https://grouplens.org/datasets/movielens/32m/) |
-| Last.FM | Music | 92K plays | [HetRec 2011](http://ir.ii.uam.es/hetrec2011/) |
-| Amazon Video Games | Games | 47K reviews | [UCSD](https://cseweb.ucsd.edu/~jmcauley/datasets.html) |
-| Goodreads | Books | 869K ratings | [UCSD](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/) |
-
 ### Strategies
 
 | Strategy | Description | Complexity |
@@ -57,22 +72,7 @@ python -m benchmarks report
 | **MMR** | Maximal Marginal Relevance | O(k·n) |
 | **MSD** | Max-Sum Diversification | O(k·n) |
 | **DPP** | Determinantal Point Process | O(k²·n) |
-| **SSD** | Sliding Spectrum Decomposition | O(k²·n) |
-
-### Latency
-
-All strategies are very fast in practice. With 100 candidates and 256d embeddings (typical for modern embedding models), selecting k=10 items:
-
-| Strategy | Latency | Notes |
-|----------|---------|-------|
-| MMR | ~0.1ms | Fastest |
-| MSD | ~0.1ms | Fastest |
-| DPP | ~0.1ms | Fast |
-| SSD | ~0.5ms | Scales with embedding dimension |
-
-![Latency vs Candidates](results/latency.png)
-
-**Note:** All strategies scale linearly with `k` (items to select). MMR/MSD are O(k·n), while DPP/SSD are O(k²·n). Additionally, SSD has an O(d) factor due to Gram-Schmidt orthogonalization—if you use higher-dimensional embeddings (512d, 768d, etc.), SSD latency increases proportionally. For typical reranking scenarios (100-1000 candidates), all strategies complete in under 10ms.
+| **SSD** | Sliding Spectrum Decomposition | O(k²·n·d) |
 
 ### Metrics
 
@@ -81,7 +81,6 @@ All strategies are very fast in practice. With 100 candidates and 256d embedding
 | nDCG@10 | Relevance | Normalized Discounted Cumulative Gain |
 | MRR | Relevance | Mean Reciprocal Rank |
 | ILAD | Diversity | Intra-List Average Distance |
-| Latency | Efficiency | Time per diversification call |
 
 ### Per-Dataset Winners
 
@@ -92,19 +91,28 @@ All strategies are very fast in practice. With 100 candidates and 256d embedding
 | Amazon-VG | - | - | MMR | MSD |
 | Goodreads | SSD | MSD | MSD | MSD |
 
-### Methodology
+### Full Results
+
+See [`results/RESULTS.md`](results/RESULTS.md) for complete tables.
+
+</details>
+
+## Datasets
+
+| Dataset | Domain | Interactions | Source |
+|---------|--------|--------------|--------|
+| MovieLens-32M | Movies | 32M ratings | [GroupLens](https://grouplens.org/datasets/movielens/32m/) |
+| Last.FM | Music | 92K plays | [HetRec 2011](http://ir.ii.uam.es/hetrec2011/) |
+| Amazon Video Games | Games | 47K reviews | [UCSD](https://cseweb.ucsd.edu/~jmcauley/datasets.html) |
+| Goodreads | Books | 869K ratings | [UCSD](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/) |
+
+## Methodology
 
 - **Evaluation**: Leave-one-out protocol with 2,000 sampled users per dataset
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=20 items selected by each strategy
 - **λ sweep**: 0.0, 0.2, 0.4, 0.6, 0.8, 1.0
-
-### Full Results
-
-See [`results/RESULTS.md`](results/RESULTS.md) for complete tables.
-
-</details>
 
 <details>
 <summary>Programmatic API</summary>
@@ -124,8 +132,7 @@ results = run_benchmark(config)
 
 </details>
 
-<details>
-<summary>Citations</summary>
+## Citations
 
 ```bibtex
 @article{harper2015movielens,
@@ -152,5 +159,3 @@ results = run_benchmark(config)
   booktitle={RecSys}, year={2018}
 }
 ```
-
-</details>
