@@ -1,5 +1,3 @@
-"""Item embedding generation via SVD and similarity matrix computation."""
-
 import logging
 
 import numpy as np

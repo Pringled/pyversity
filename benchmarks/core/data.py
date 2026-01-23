@@ -1,5 +1,3 @@
-"""Dataset loading, preprocessing, and registry for benchmark evaluation."""
-
 from __future__ import annotations
 
 import logging
@@ -79,20 +77,7 @@ def load_dataset(
     min_interactions: int = 5,
     rating_threshold: float | None = None,
 ) -> InteractionData:
-    """
-    Load and preprocess a dataset.
-
-    Args:
-    ----
-        dataset: Dataset name (from registry) or DatasetInfo object
-        min_interactions: Minimum interactions per user AND item
-        rating_threshold: Override rating threshold (None = use dataset default)
-
-    Returns:
-    -------
-        Preprocessed InteractionData
-
-    """
+    """Load and preprocess a dataset from the registry."""
     # Resolve dataset info
     if isinstance(dataset, str):
         if dataset not in DATASET_REGISTRY:

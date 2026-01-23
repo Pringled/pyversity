@@ -1,19 +1,16 @@
-"""Plot generation from benchmark results."""
-
 from __future__ import annotations
 
 import json
 import logging
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 logger = logging.getLogger(__name__)
 
-
-def _setup_plot_style() -> None:
-    """Set up seaborn styling for plots."""
-    import seaborn as sns
-
-    sns.set_theme(style="whitegrid", palette="muted")
+# Set up seaborn styling
+sns.set_theme(style="whitegrid", palette="muted")
 
 
 STRATEGIES = ["mmr", "msd", "dpp", "ssd"]
@@ -218,10 +215,6 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
 
 def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metric: str = "ilad") -> None:
     """Generate Pareto frontier plot showing relevance vs diversity tradeoff."""
-    import matplotlib.pyplot as plt
-
-    _setup_plot_style()
-
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     axes = axes.flatten()
 
@@ -280,11 +273,7 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
 
 def generate_latency_plot(output_path: Path) -> None:
     """Generate latency scaling plot using synthetic benchmark."""
-    import matplotlib.pyplot as plt
-
     from benchmarks.core.latency import run_latency_benchmark
-
-    _setup_plot_style()
 
     logger.info("Running synthetic latency benchmark...")
     results = run_latency_benchmark()
@@ -325,7 +314,7 @@ def generate_latency_plot(output_path: Path) -> None:
 
 def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
     """Log relevance-budgeted analysis tables."""
-    logger.info(f"\n=== Relevance-Budgeted Analysis (≥{int(RELEVANCE_FLOOR*100)}% baseline nDCG) ===")
+    logger.info(f"\n=== Relevance-Budgeted Analysis (≥{int(RELEVANCE_FLOOR * 100)}% baseline nDCG) ===")
 
     # Per-dataset recommendations
     recommendations = _compute_relevance_budgeted_scores(all_data)

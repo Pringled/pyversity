@@ -1,5 +1,3 @@
-"""Relevance and diversity metrics for recommendation evaluation."""
-
 import numpy as np
 from numpy.typing import NDArray
 

@@ -1,13 +1,3 @@
-"""
-CLI entry point for benchmarks.
-
-Usage:
-    python -m benchmarks download   # Download datasets
-    python -m benchmarks run        # Run benchmarks on all datasets
-    python -m benchmarks report     # Generate markdown report + plots
-    python -m benchmarks            # Run all (default)
-"""
-
 from __future__ import annotations
 
 import argparse

@@ -1,5 +1,3 @@
-"""Benchmark configuration dataclass with defaults for all parameters."""
-
 from dataclasses import dataclass, field
 from pathlib import Path
 

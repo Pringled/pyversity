@@ -1,5 +1,3 @@
-"""Core benchmark modules."""
-
 from benchmarks.core.config import BenchmarkConfig
 from benchmarks.core.data import DATASET_REGISTRY, DatasetInfo, DatasetType, InteractionData, load_dataset
 from benchmarks.core.latency import run_latency_benchmark

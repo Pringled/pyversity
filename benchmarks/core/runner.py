@@ -1,5 +1,3 @@
-"""Core benchmark execution logic."""
-
 from __future__ import annotations
 
 import json
@@ -20,18 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_benchmark(config: BenchmarkConfig) -> dict:
-    """
-    Run the benchmark suite.
-
-    Args:
-    ----
-        config: Benchmark configuration
-
-    Returns:
-    -------
-        Results dictionary with config and per-strategy metrics
-
-    """
+    """Run benchmark suite and return results dictionary."""
     if config.dataset is None:
         raise ValueError("config.dataset must be specified")
 

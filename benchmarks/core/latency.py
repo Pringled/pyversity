@@ -1,5 +1,3 @@
-"""Synthetic latency benchmark to measure algorithmic complexity."""
-
 from __future__ import annotations
 
 import time
