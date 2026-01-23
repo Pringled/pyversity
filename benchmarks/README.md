@@ -1,7 +1,17 @@
 # Pyversity Benchmarks
 
-Comprehensive evaluation of diversification strategies across 4 recommendation datasets.
-We measure the relevance-diversity tradeoff to help you choose the right strategy for your use case.
+This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, and **SSD** across 4 recommendation datasets.
+
+For each dataset, we use a leave-one-out evaluation protocol (meaning we hold out one item
+per user as the test set), generate candidate items based on similar items, then rerank with each
+diversification strategy. We measure relevance (nDCG, MRR) and diversity (ILAD) to trace the
+Pareto frontier of the relevance-diversity tradeoff.
+
+In addition, we measure latency of each strategy as the number of candidates scales.
+
+> **Note:** We don't benchmark COVER (coverage-based diversification) because it optimizes a different
+> objective (topic/category coverage) and requires explicit item taxonomies not available in standard
+> collaborative filtering datasets.
 
 ## Table of Contents
 
