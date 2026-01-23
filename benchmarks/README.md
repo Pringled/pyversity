@@ -29,14 +29,14 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 
 ### Strategy Scorecard
 
-| Strategy | Combined Score | Typical `diversity` | Avg nDCG vs Baseline |
-|----------|:--------------:|:-------------------:|:--------------------:|
-| **DPP**  | **0.439**      | 0.85                | 99%                  |
-| SSD      | 0.236          | 0.85                | 100%                 |
-| MSD      | 0.226          | 0.50                | 99%                  |
-| MMR      | 0.213          | 0.78                | 100%                 |
+| Strategy | Combined Score | Best ILAD | Best ILMD |
+|----------|:--------------:|:---------:|:---------:|
+| **DPP**  | **0.439**      | 0.75      | **0.26**  |
+| SSD      | 0.236          | 0.62      | 0.17      |
+| MSD      | 0.226          | **0.78**  | 0.15      |
+| MMR      | 0.213          | 0.58      | 0.18      |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains. Higher = better balance of both diversity metrics.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains. Best ILAD/ILMD = average across datasets while maintaining ≥95% baseline relevance.*
 
 ### Best Configs Per Goal (≥95% baseline nDCG)
 

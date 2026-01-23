@@ -133,8 +133,8 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
     """Compute per-strategy aggregate scores across all datasets."""
     datasets = sorted(set(p["dataset"] for p in all_data))
     strategy_scores: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_lambdas: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ndcg_ratios: dict[str, list[float]] = {s: [] for s in STRATEGIES}
+    strategy_ilads: dict[str, list[float]] = {s: [] for s in STRATEGIES}
+    strategy_ilmds: dict[str, list[float]] = {s: [] for s in STRATEGIES}
 
     for dataset in datasets:
         dataset_points = [p for p in all_data if p["dataset"] == dataset]
@@ -160,20 +160,20 @@ def _compute_strategy_scorecard(all_data: list[dict]) -> dict[str, dict[str, flo
 
             best_point = max(feasible, key=combined_score)
             strategy_scores[strategy].append(combined_score(best_point))
-            strategy_lambdas[strategy].append(best_point["lambda"])
-            strategy_ndcg_ratios[strategy].append(best_point["ndcg"] / baseline_ndcg)
+            strategy_ilads[strategy].append(best_point["ilad"])
+            strategy_ilmds[strategy].append(best_point["ilmd"])
 
     # Aggregate across datasets
     scorecard: dict[str, dict[str, float]] = {}
     for strategy in STRATEGIES:
         if strategy_scores[strategy]:
             scores = strategy_scores[strategy]
-            lambdas = strategy_lambdas[strategy]
-            ratios = strategy_ndcg_ratios[strategy]
+            ilads = strategy_ilads[strategy]
+            ilmds = strategy_ilmds[strategy]
             scorecard[strategy] = {
                 "combined_score": sum(scores) / len(scores),
-                "avg_lambda": sum(lambdas) / len(lambdas),
-                "avg_ndcg_ratio": sum(ratios) / len(ratios),
+                "best_ilad": sum(ilads) / len(ilads),
+                "best_ilmd": sum(ilmds) / len(ilmds),
             }
 
     return scorecard
@@ -314,14 +314,14 @@ def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
     # Strategy scorecard
     scorecard = _compute_strategy_scorecard(all_data)
     logger.info("\n=== Strategy Scorecard (averaged across datasets) ===")
-    logger.info("| Strategy | Combined Score | Avg λ | Avg nDCG vs Base |")
-    logger.info("|----------|----------------|-------|------------------|")
+    logger.info("| Strategy | Combined Score | Best ILAD | Best ILMD |")
+    logger.info("|----------|----------------|-----------|-----------|")
 
     sorted_strategies = sorted(scorecard.items(), key=lambda x: x[1]["combined_score"], reverse=True)
     for strategy, scores in sorted_strategies:
         logger.info(
             f"| {strategy.upper():8} | {scores['combined_score']:.3f}          | "
-            f"{scores['avg_lambda']:.2f}  | {scores['avg_ndcg_ratio']:.1%}            |"
+            f"{scores['best_ilad']:.2f}      | {scores['best_ilmd']:.2f}      |"
         )
 
     # Summary
