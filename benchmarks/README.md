@@ -4,7 +4,7 @@ This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, 
 
 For each dataset, we use a leave-one-out evaluation protocol (meaning we hold out one item
 per user as the test set), generate candidate items based on similar items, then rerank with each
-diversification strategy. We measure relevance (nDCG, MRR) and diversity (ILAD, ILMD) to trace the
+diversification strategy. We measure relevance (nDCG) and diversity (ILAD, ILMD) to trace the
 Pareto frontier of the relevance-diversity tradeoff.
 
 In addition, we measure latency of each strategy as the number of candidates scales.
@@ -29,31 +29,32 @@ We evaluate using two diversity metrics that capture different aspects:
 - **ILAD** (Intra-List Average Distance): Measures overall diversity spread
 - **ILMD** (Intra-List Minimum Distance): Ensures no very similar item pairs (worst-case diversity)
 
-### Summary: Pareto Area Under Curve
+### Pareto Area Under Curve
 
-The Pareto area measures the total relevance-diversity tradeoff quality by computing the area under each strategy's curve. Higher area = better overall performance across all diversity levels.
+The Pareto area measures the relevance-diversity tradeoff quality by computing the area under each strategy's curve in the **diversification region** (diversity ≥ 0.3). Higher = better.
 
-| Metric | Best | 2nd | 3rd | 4th |
-|--------|------|-----|-----|-----|
-| **nDCG vs ILAD** | MSD | DPP | SSD | MMR |
-| **nDCG vs ILMD** | MMR* | DPP | SSD | MSD |
-
-*\*MMR "wins" ILMD by not diversifying—it keeps items similar (high relevance, low diversity). For actual diversification, use DPP or SSD.*
+| Strategy | nDCG vs ILAD | nDCG vs ILMD | Combined | Notes |
+|----------|:------------:|:------------:|:--------:|-------|
+| **DPP**  | 0.042        | 0.036        | **0.039** | Best overall balance |
+| **MSD**  | **0.046**    | 0.010        | 0.028    | Best for ILAD (overall variety) |
+| **SSD**  | 0.041        | 0.019        | 0.030    | Good balance |
+| **MMR**  | 0.038        | 0.029        | 0.033    | Simple baseline |
 
 **Key insight:** The "best" strategy depends on your diversity metric:
-- **MSD** maximizes average pairwise distance—great for overall variety
-- **DPP/SSD** better ensure no very similar pairs slip through
-- **MMR** achieves high ILMD by barely diversifying (not recommended if diversity matters)
+- **DPP** wins on combined score—best overall tradeoff
+- **MSD** dominates ILAD—great for maximum variety, but poor ILMD (allows similar pairs)
+- **SSD/DPP** better ensure no very similar pairs slip through
 
 ### Recommendations
 
 | Goal | Strategy | λ | Why |
 |-----------|----------|---|-----|
-| Maximum relevance, light diversity | **SSD** | 0.7-0.9 | Best nDCG at low ILAD |
-| Balanced tradeoff | **DPP** | 0.4-0.6 | Good on both ILAD and ILMD |
+| Balanced tradeoff | **DPP** | 0.4-0.6 | Highest combined Pareto area |
+| Maximum relevance, light diversity | **SSD** | 0.7-0.9 | Best nDCG at low diversity |
 | High average diversity | **MSD** | 0.3-0.5 | Dominates ILAD metric |
 | No similar pairs (strict) | **DPP** | 0.3-0.5 | Best ILMD scores |
 | Extreme diversity | **MSD** | 0.1-0.3 | Only strategy reaching ILAD > 0.9 |
+| Simple baseline | **MMR** | 0.5-0.7 | Easy to implement and tune |
 
 ## Relevance-Diversity Tradeoff
 
@@ -120,11 +121,10 @@ python -m benchmarks report
 | Metric | Type | Description |
 |--------|------|-------------|
 | nDCG@k | Relevance | Normalized Discounted Cumulative Gain |
-| MRR | Relevance | Mean Reciprocal Rank |
 | ILAD | Diversity | Intra-List Average Distance (mean pairwise) |
 | ILMD | Diversity | Intra-List Minimum Distance (worst-case pair) |
 
-### Per-Dataset Winners
+### Per-Dataset Winners (by ILAD region)
 
 | Dataset | Low (0.3-0.5) | Moderate (0.5-0.7) | High (0.7-0.9) | Max (0.9+) |
 |---------|:-------------:|:------------------:|:--------------:|:----------:|
@@ -133,9 +133,7 @@ python -m benchmarks report
 | Amazon-VG | - | - | MMR | MSD |
 | Goodreads | SSD | MSD | MSD | MSD |
 
-### Full Results
-
-See [`results/RESULTS.md`](results/RESULTS.md) for complete tables.
+*Raw JSON results are in `results/*.json`*
 
 </details>
 

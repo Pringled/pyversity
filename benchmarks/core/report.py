@@ -348,31 +348,18 @@ def _compute_pareto_dominance(results: list[dict]) -> dict:
     }
 
 
-def _compute_multi_metric_summary(results: list[dict]) -> dict:
+def _compute_multi_metric_summary(results: list[dict], min_diversity: float = 0.3) -> dict:
     """
-    Compute Pareto area for multiple metric combinations.
+    Compute Pareto area for nDCG vs ILAD and nDCG vs ILMD.
 
-    Analyzes: nDCG vs ILAD, MRR vs ILAD, nDCG vs ILMD, MRR vs ILMD
+    Only counts points in the diversification region (diversity >= min_diversity)
+    to avoid rewarding strategies that simply don't diversify.
     """
     strategies = ["mmr", "msd", "dpp", "ssd"]
     metric_pairs = [
         ("ndcg@10", "ilad", "nDCG vs ILAD"),
-        ("mrr", "ilad", "MRR vs ILAD"),
         ("ndcg@10", "ilmd", "nDCG vs ILMD"),
-        ("mrr", "ilmd", "MRR vs ILMD"),
     ]
-
-    def _compute_area(points: list[dict], x_key: str, y_key: str) -> float:
-        """Compute area under curve using trapezoidal rule."""
-        if len(points) < 2:
-            return 0.0
-        sorted_pts = sorted(points, key=lambda p: p[x_key])
-        area = 0.0
-        for i in range(len(sorted_pts) - 1):
-            dx = sorted_pts[i + 1][x_key] - sorted_pts[i][x_key]
-            avg_y = (sorted_pts[i][y_key] + sorted_pts[i + 1][y_key]) / 2
-            area += dx * avg_y
-        return area
 
     summary: dict[str, dict[str, float]] = {label: {} for _, _, label in metric_pairs}
 
@@ -381,12 +368,13 @@ def _compute_multi_metric_summary(results: list[dict]) -> dict:
 
         for dataset_result in results:
             for s in strategies:
+                # Filter to only include points in the diversification region
                 points = [
                     {rel_key: run[rel_key], div_key: run[div_key]}
                     for run in dataset_result["results"]
-                    if run["strategy"] == s
+                    if run["strategy"] == s and run[div_key] >= min_diversity
                 ]
-                area = _compute_area(points, div_key, rel_key)
+                area = _trapezoidal_area_generic(points, div_key, rel_key)
                 strategy_areas[s].append(area)
 
         # Average across datasets
@@ -396,30 +384,61 @@ def _compute_multi_metric_summary(results: list[dict]) -> dict:
     return summary
 
 
+def _trapezoidal_area_generic(points: list[dict], x_key: str, y_key: str) -> float:
+    """Compute area under curve using trapezoidal rule with configurable keys."""
+    if len(points) < 2:
+        return 0.0
+    sorted_pts = sorted(points, key=lambda p: p[x_key])
+    area = 0.0
+    for i in range(len(sorted_pts) - 1):
+        dx = sorted_pts[i + 1][x_key] - sorted_pts[i][x_key]
+        avg_y = (sorted_pts[i][y_key] + sorted_pts[i + 1][y_key]) / 2
+        area += dx * avg_y
+    return area
+
+
 def _format_multi_metric_table(multi_metric: dict) -> list[str]:
-    """Format multi-metric summary as markdown table."""
+    """Format multi-metric summary as markdown table with combined score."""
     lines = [
         "### Multi-Metric Comparison\n",
-        "Area under curve for different relevance-diversity metric combinations:\n",
+        "Area under Pareto curve (AUC) for different metric combinations:\n",
         "| Metrics | SSD | DPP | MSD | MMR | Best |",
         "|---------|:---:|:---:|:---:|:---:|:----:|",
     ]
+
+    strategies = ["ssd", "dpp", "msd", "mmr"]
+    combined_scores: dict[str, float] = {s: 0.0 for s in strategies}
 
     for label, areas in multi_metric.items():
         row = [label]
         best_s = ""
         best_val = -1.0
-        for s in ["ssd", "dpp", "msd", "mmr"]:
+        for s in strategies:
             val = areas.get(s, 0)
             row.append(f"{val:.4f}")
+            combined_scores[s] += val
             if val > best_val:
                 best_val = val
                 best_s = s.upper()
         row.append(f"**{best_s}**")
         lines.append("| " + " | ".join(row) + " |")
 
+    # Add combined row (average across all metric pairs)
+    num_metrics = len(multi_metric)
+    row = ["**Combined (avg)**"]
+    best_s = ""
+    best_val = -1.0
+    for s in strategies:
+        avg_val = combined_scores[s] / num_metrics if num_metrics > 0 else 0.0
+        row.append(f"**{avg_val:.4f}**")
+        if avg_val > best_val:
+            best_val = avg_val
+            best_s = s.upper()
+    row.append(f"**{best_s}**")
+    lines.append("| " + " | ".join(row) + " |")
+
     lines.append("")
-    lines.append("*Higher area = better overall tradeoff between that relevance and diversity metric.*")
+    lines.append("*Higher AUC = better overall tradeoff. Combined averages across all metric pairs.*")
     lines.append("")
     return lines
 
