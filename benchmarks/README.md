@@ -166,11 +166,31 @@ python -m benchmarks report
 
 ## Methodology
 
+### Experimental Setup
+
 - **Evaluation**: Leave-one-out protocol with 2,000 sampled users per dataset
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=20 items selected by each strategy
 - **diversity sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
+
+### How We Compute "Wins"
+
+For each diversity region (e.g., ILAD 0.5-0.7), we:
+
+1. **Filter** each strategy's results to points within that region
+2. **Find best nDCG** achieved by each strategy in that region
+3. **Compare across strategies** per dataset—the strategy with highest nDCG "wins" that dataset
+4. **Count wins** across all 4 datasets to determine the overall leader
+
+This approach measures: *"At a given diversity level, which strategy maintains the best relevance?"*
+
+We use three regions per metric:
+- **Low**: Where diversification begins (ILAD 0.3-0.5, ILMD 0.05-0.15)
+- **Moderate**: Balanced tradeoff zone (ILAD 0.5-0.7, ILMD 0.15-0.25)
+- **High**: Strong diversity (ILAD 0.7-0.9, ILMD 0.25-0.35)
+
+*Note: Not all strategies reach all regions on all datasets. A "-" in the per-dataset table means no data points in that region.*
 
 <details>
 <summary>Programmatic API</summary>
