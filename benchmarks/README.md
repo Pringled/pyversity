@@ -25,50 +25,43 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We evaluate using two diversity metrics that capture different aspects:
-- **ILAD** (Intra-List Average Distance): Measures overall diversity spread
-- **ILMD** (Intra-List Minimum Distance): Ensures no very similar item pairs (worst-case diversity)
+We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance**. This ensures we only compare "deployable" configurations.
 
-### Dataset Wins by Region
+### Strategy Scorecard
 
-We count how many datasets each strategy achieves the **highest max nDCG** in each diversity region.
-Regions are computed dynamically by dividing the observed range into thirds:
+| Strategy | Combined Score | Typical λ | Avg nDCG vs Baseline |
+|----------|:--------------:|:---------:|:--------------------:|
+| **DPP**  | **0.439**      | 0.85      | 99.3%                |
+| SSD      | 0.236          | 0.85      | 101.9%               |
+| MSD      | 0.226          | 0.50      | 98.7%                |
+| MMR      | 0.213          | 0.78      | 101.4%               |
 
-| Metric | Region   | Range       | MMR | MSD | DPP | SSD | Best    |
-|--------|----------|-------------|:---:|:---:|:---:|:---:|---------|
-| ILAD   | Low      | 0.33-0.55   | 0   | 1   | 1   | 1   | Tied    |
-| ILAD   | Moderate | 0.55-0.77   | 0   | 2   | 1   | 0   | **MSD** |
-| ILAD   | High     | 0.77-1.00   | 0   | 3   | 1   | 0   | **MSD** |
-| ILMD   | Low      | 0.04-0.29   | 1   | 1   | 1   | 1   | Tied    |
-| ILMD   | Moderate | 0.29-0.54   | 1   | 0   | 2   | 1   | **DPP** |
-| ILMD   | High     | 0.54-0.79   | 2   | 0   | 1   | 0   | **MMR** |
-| | | **Total** | **4** | **7** | **7** | **3** | **MSD/DPP** |
+*Combined Score = geometric mean of normalized ILAD and ILMD gains. Higher = better balance of both diversity metrics.*
 
-*Wins per region: strategy with highest max nDCG in that diversity range wins. Some rows sum to <4 when a dataset has no data points in that region.*
+### Best Configs Per Goal (≥95% baseline nDCG)
 
-**Key insight:**
-- **MSD** and **DPP** tied at 7 wins each—but excel at different diversity metrics
-- **MSD** dominates ILAD—best for maximum overall variety
-- **DPP** excels at ILMD—best at ensuring no similar pairs slip through
-- **MMR** wins high ILMD regions—competitive simple baseline
-- **SSD** shines in sequence-aware settings (see note below)
+| Goal | Winner | Wins | Why |
+|------|--------|:----:|-----|
+| **Best Overall** | **DPP** | 4/4 | Highest combined diversity (both ILAD and ILMD) |
+| **Max ILAD** (overall variety) | **MSD** | 3/4 | Optimizes sum of pairwise distances |
+| **Max ILMD** (no similar pairs) | **DPP** | 4/4 | Best worst-case diversity guarantee |
+
+### Recommendations
+
+| Goal | Strategy | `diversity` | Notes |
+|------|----------|:-----------:|-------|
+| **Best overall balance** | **DPP** | 0.8-0.9 | Wins both overall and ILMD |
+| **Maximum variety** | **MSD** | 0.5-0.6 | Best ILAD while keeping relevance |
+| **Avoid similar pairs** | **DPP** | 0.8-0.9 | Strictest duplicate avoidance |
+| **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
+| **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
+
+*`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
 > **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
 > **sequence-aware** diversification with `recent_embeddings`—it rewards novelty relative to
 > recently shown items. For content feeds, infinite scroll, or conversational RAG where you
 > maintain a sliding window of recent items, SSD may outperform these results.
-
-### Recommendations
-
-| Goal | Strategy | diversity | Why |
-|-----------|----------|-----------|-----|
-| Maximum variety | **MSD** | 0.7-1.0 | Dominates ILAD (best overall spread) |
-| Avoid similar pairs | **DPP** | 0.5-0.8 | Best ILMD in moderate region |
-| Balanced tradeoff | **DPP** | 0.4-0.6 | Strong on both ILAD and ILMD |
-| Sequence-aware feeds | **SSD** | 0.3-0.5 | Use with `recent_embeddings` |
-| Simple baseline | **MMR** | 0.3-0.5 | Easy to implement, competitive |
-
-*`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
 ## Relevance-Diversity Tradeoff
 
@@ -130,22 +123,14 @@ python -m benchmarks report
 | **DPP** | Determinantal Point Process | O(k²·n) |
 | **SSD** | Sliding Spectrum Decomposition | O(k²·n·d) |
 
-### Metrics
+### Per-Dataset Best Configs (≥95% baseline nDCG)
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| nDCG@k | Relevance | Normalized Discounted Cumulative Gain |
-| ILAD | Diversity | Intra-List Average Distance (mean pairwise) |
-| ILMD | Diversity | Intra-List Minimum Distance (worst-case pair) |
-
-### Per-Dataset Winners (by ILAD region)
-
-| Dataset | Low (0.3-0.5) | Moderate (0.5-0.7) | High (0.7-0.9) |
-|---------|:-------------:|:------------------:|:--------------:|
-| MovieLens-32M | DPP | DPP | MSD |
-| Last.FM | SSD | MSD | MSD |
-| Amazon-VG | - | - | MMR |
-| Goodreads | MSD | MSD | MSD |
+| Dataset | Max ILAD | Max ILMD | Best Overall |
+|---------|:--------:|:--------:|:------------:|
+| MovieLens-32M | DPP (λ=0.9) | DPP (λ=0.9) | DPP (λ=0.9) |
+| Last.FM | MSD (λ=0.6) | DPP (λ=0.8) | DPP (λ=0.8) |
+| Amazon-VG | MSD (λ=0.5) | DPP (λ=0.9) | DPP (λ=0.9) |
+| Goodreads | MSD (λ=0.5) | DPP (λ=0.8) | DPP (λ=0.8) |
 
 *Raw JSON results are in `results/*.json`*
 
@@ -170,23 +155,32 @@ python -m benchmarks report
 - **Selection**: k=20 items selected by each strategy
 - **diversity sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
-### How We Compute "Wins"
+### Relevance-Budgeted Evaluation
 
-For each diversity region (e.g., ILAD 0.5-0.7), we:
+We use a **relevance floor** approach to ensure fair comparison:
 
-1. **Filter** each strategy's results to points within that region
-2. **Find max nDCG** achieved by each strategy in that region
-3. **Compare across strategies** per dataset—the strategy with highest max nDCG "wins" that dataset
-4. **Count wins** across all 4 datasets to determine the overall leader
+1. **Baseline**: For each dataset, compute baseline nDCG at `diversity=0` (no diversification)
+2. **Filter**: Keep only configs where nDCG ≥ 95% of baseline (deployable configurations)
+3. **Compare**: Among feasible configs, find which strategy achieves:
+   - **Max ILAD**: Best overall diversity spread
+   - **Max ILMD**: Best worst-case diversity (no similar pairs)
+   - **Best Combined**: Geometric mean of normalized ILAD and ILMD gains
 
-This approach measures: *"At a given diversity level, which strategy can achieve the best relevance?"*
+The **Combined Score** normalizes gains per dataset:
+- `ILAD_gain = (ILAD - ILAD_min) / (ILAD_max - ILAD_min)`
+- `ILMD_gain = (ILMD - ILMD_min) / (ILMD_max - ILMD_min)`
+- `Combined = sqrt(ILAD_gain × ILMD_gain)`
 
-Regions are computed dynamically by dividing the observed metric range (across all strategies and datasets) into thirds:
-- **Low**: First third of observed range
-- **Moderate**: Middle third
-- **High**: Top third
+This ensures a strategy must improve *both* metrics to score well—high only if both improve.
 
-*Note: Not all strategies reach all regions on all datasets. A "-" in the per-dataset table means no data points in that region.*
+### Diversity Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| **ILAD** | Average | Mean pairwise distance—measures overall variety |
+| **ILMD** | Minimum | Minimum pairwise distance—ensures no similar pairs |
+
+Both are computed as `1 - cosine_similarity` between item embeddings.
 
 <details>
 <summary>Programmatic API</summary>
