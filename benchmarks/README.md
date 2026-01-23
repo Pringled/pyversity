@@ -33,23 +33,15 @@ We evaluate using two diversity metrics that capture different aspects:
 
 We count how many datasets each strategy achieves the highest nDCG in each diversity region:
 
-**ILAD (Average Diversity):**
-
-| Region   | Range     | MMR | MSD | DPP | SSD | Best   |
-|----------|-----------|:---:|:---:|:---:|:---:|--------|
-| Low      | 0.3-0.5   | 0   | 1   | 1   | 1   | Tied   |
-| Moderate | 0.5-0.7   | 0   | 2   | 1   | 0   | **MSD** |
-| High     | 0.7-0.9   | 1   | 3   | 0   | 0   | **MSD** |
-
-**ILMD (Minimum Diversity):**
-
-| Region   | Range       | MMR | MSD | DPP | SSD | Best   |
-|----------|-------------|:---:|:---:|:---:|:---:|--------|
-| Low      | 0.05-0.15   | 1   | 0   | 2   | 0   | **DPP** |
-| Moderate | 0.15-0.25   | 1   | 0   | 1   | 0   | Tied   |
-| High     | 0.25-0.35   | 1   | 0   | 3   | 0   | **DPP** |
-
-**Total Wins:** DPP (8) > MSD (6) > MMR (4) > SSD (1)
+| Metric | Region   | Range       | MMR | MSD | DPP | SSD | Best    |
+|--------|----------|-------------|:---:|:---:|:---:|:---:|---------|
+| ILAD   | Low      | 0.3-0.5     | 0   | 1   | 1   | 1   | Tied    |
+| ILAD   | Moderate | 0.5-0.7     | 0   | 2   | 1   | 0   | **MSD** |
+| ILAD   | High     | 0.7-0.9     | 1   | 3   | 0   | 0   | **MSD** |
+| ILMD   | Low      | 0.05-0.15   | 1   | 0   | 2   | 0   | **DPP** |
+| ILMD   | Moderate | 0.15-0.25   | 1   | 0   | 1   | 0   | Tied    |
+| ILMD   | High     | 0.25-0.35   | 1   | 0   | 3   | 0   | **DPP** |
+| | | **Total** | **4** | **6** | **8** | **1** | **DPP** |
 
 **Key insight:**
 - **DPP** wins overall—best at balancing relevance with ILMD (no similar pairs)
