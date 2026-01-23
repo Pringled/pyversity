@@ -4,7 +4,7 @@ This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, 
 
 For each dataset, we use a leave-one-out evaluation protocol (meaning we hold out one item
 per user as the test set), generate candidate items based on similar items, then rerank with each
-diversification strategy. We measure relevance (nDCG, MRR) and diversity (ILAD) to trace the
+diversification strategy. We measure relevance (nDCG, MRR) and diversity (ILAD, ILMD) to trace the
 Pareto frontier of the relevance-diversity tradeoff.
 
 In addition, we measure latency of each strategy as the number of candidates scales.
@@ -25,18 +25,49 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-**Different strategies excel at different diversity levels:**
+We evaluate using two diversity metrics that capture different aspects:
+- **ILAD** (Intra-List Average Distance): Measures overall diversity spread
+- **ILMD** (Intra-List Minimum Distance): Ensures no very similar item pairs (worst-case diversity)
 
-| Diversity Level | Winner | λ | Notes |
-|-----------------|--------|---|-------|
-| Low (ILAD 0.3-0.5) | **SSD** | 0.6-0.8 | Highest relevance at light diversification |
-| Moderate (ILAD 0.5-0.7) | **MSD/DPP** | 0.4-0.6 | Good middle-ground |
-| High (ILAD 0.7-0.9) | **MSD** | 0.4-0.6 | Best for heavy diversification |
-| Maximum (ILAD 0.9+) | **MSD** | 0.2-0.4 | Dominates at extreme diversity |
+### Summary: Pareto Area Under Curve
+
+The Pareto area measures the total relevance-diversity tradeoff quality by computing the area under each strategy's curve. Higher area = better overall performance across all diversity levels.
+
+| Metric | Best | 2nd | 3rd | 4th |
+|--------|------|-----|-----|-----|
+| **nDCG vs ILAD** | MSD | DPP | SSD | MMR |
+| **nDCG vs ILMD** | MMR* | DPP | SSD | MSD |
+
+*\*MMR "wins" ILMD by not diversifying—it keeps items similar (high relevance, low diversity). For actual diversification, use DPP or SSD.*
+
+**Key insight:** The "best" strategy depends on your diversity metric:
+- **MSD** maximizes average pairwise distance—great for overall variety
+- **DPP/SSD** better ensure no very similar pairs slip through
+- **MMR** achieves high ILMD by barely diversifying (not recommended if diversity matters)
+
+### Recommendations
+
+| Goal | Strategy | λ | Why |
+|-----------|----------|---|-----|
+| Maximum relevance, light diversity | **SSD** | 0.7-0.9 | Best nDCG at low ILAD |
+| Balanced tradeoff | **DPP** | 0.4-0.6 | Good on both ILAD and ILMD |
+| High average diversity | **MSD** | 0.3-0.5 | Dominates ILAD metric |
+| No similar pairs (strict) | **DPP** | 0.3-0.5 | Best ILMD scores |
+| Extreme diversity | **MSD** | 0.1-0.3 | Only strategy reaching ILAD > 0.9 |
 
 ## Relevance-Diversity Tradeoff
 
-![Relevance vs Diversity Tradeoff](results/pareto.png)
+### ILAD (Average Diversity)
+
+![Relevance vs ILAD Tradeoff](results/pareto_ilad.png)
+
+*Higher ILAD = more overall variety in recommendations*
+
+### ILMD (Minimum Diversity)
+
+![Relevance vs ILMD Tradeoff](results/pareto_ilmd.png)
+
+*Higher ILMD = no very similar pairs (stricter diversity guarantee)*
 
 ## Latency
 
@@ -88,9 +119,10 @@ python -m benchmarks report
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| nDCG@10 | Relevance | Normalized Discounted Cumulative Gain |
+| nDCG@k | Relevance | Normalized Discounted Cumulative Gain |
 | MRR | Relevance | Mean Reciprocal Rank |
-| ILAD | Diversity | Intra-List Average Distance |
+| ILAD | Diversity | Intra-List Average Distance (mean pairwise) |
+| ILMD | Diversity | Intra-List Minimum Distance (worst-case pair) |
 
 ### Per-Dataset Winners
 
@@ -122,7 +154,7 @@ See [`results/RESULTS.md`](results/RESULTS.md) for complete tables.
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=20 items selected by each strategy
-- **λ sweep**: 0.0, 0.2, 0.4, 0.6, 0.8, 1.0
+- **λ sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
 <details>
 <summary>Programmatic API</summary>

@@ -41,15 +41,8 @@ def _compute_retention_table(results: list[dict], retention_pct: float = 0.95) -
     return table
 
 
-def _compute_regional_winners(results: list[dict]) -> dict:
-    """Compute which strategy achieves best nDCG in each diversity region."""
-    regions = {
-        "Low (0.3-0.5)": (0.3, 0.5),
-        "Moderate (0.5-0.7)": (0.5, 0.7),
-        "High (0.7-0.9)": (0.7, 0.9),
-        "Maximum (0.9+)": (0.9, 1.0),
-    }
-
+def _extract_all_points(results: list[dict]) -> list[dict]:
+    """Extract all data points from results into flat list."""
     all_points = []
     for dataset_result in results:
         dataset = dataset_result["dataset"]
@@ -62,16 +55,24 @@ def _compute_regional_winners(results: list[dict]) -> dict:
                     "ilad": run["ilad"],
                 }
             )
+    return all_points
 
+
+def _find_regional_winners(
+    datasets: list[str],
+    all_points: list[dict],
+    regions: dict[str, tuple[float, float]],
+) -> tuple[dict, dict]:
+    """Find winner per region per dataset and aggregate wins."""
     regional_data: dict[str, dict[str, dict[str, str | float]]] = {}
-    datasets = sorted(set(point["dataset"] for point in all_points))
+    region_wins: dict[str, dict[str, int]] = {region: {} for region in regions}
 
     for dataset in datasets:
-        dataset_points = [point for point in all_points if point["dataset"] == dataset]
+        dataset_points = [p for p in all_points if p["dataset"] == dataset]
         regional_data[dataset] = {}
 
         for region_name, (lo, hi) in regions.items():
-            in_region = [point for point in dataset_points if lo <= point["ilad"] < hi]
+            in_region = [p for p in dataset_points if lo <= p["ilad"] < hi]
             if in_region:
                 best = max(in_region, key=lambda x: x["ndcg"])
                 regional_data[dataset][region_name] = {
@@ -79,66 +80,64 @@ def _compute_regional_winners(results: list[dict]) -> dict:
                     "ndcg": best["ndcg"],
                     "ilad": best["ilad"],
                 }
+                winner = str(best["strategy"])
+                region_wins[region_name][winner] = region_wins[region_name].get(winner, 0) + 1
 
-    region_wins: dict[str, dict[str, int]] = {region: {} for region in regions}
-    for dataset, regions_dict in regional_data.items():
-        for region_name, data in regions_dict.items():
-            winner = str(data["winner"])
-            region_wins[region_name][winner] = region_wins[region_name].get(winner, 0) + 1
-
-    return {"per_dataset": regional_data, "aggregate": region_wins}
+    return regional_data, region_wins
 
 
-def _compute_f1_scores(results: list[dict]) -> tuple[dict, dict]:
-    """Compute normalized F1 scores (harmonic mean of nDCG and ILAD)."""
-    best_per_dataset: dict[str, dict[str, dict[str, float]]] = {}
-    all_scores: list[dict[str, str | float]] = []
+def _compute_region_averages(
+    datasets: list[str],
+    all_points: list[dict],
+    regions: dict[str, tuple[float, float]],
+) -> dict[str, dict[str, float]]:
+    """Compute average best nDCG per strategy per region across datasets."""
+    all_strategies = {"ssd", "dpp", "msd", "mmr"}
+    region_best_per_dataset: dict[str, dict[str, dict[str, float]]] = {r: {} for r in regions}
 
-    for dataset_result in results:
-        dataset = dataset_result["dataset"]
-        best_per_dataset[dataset] = {}
+    for dataset in datasets:
+        dataset_points = [p for p in all_points if p["dataset"] == dataset]
+        for region_name, (lo, hi) in regions.items():
+            in_region = [p for p in dataset_points if lo <= p["ilad"] < hi]
+            strategy_best: dict[str, float] = {}
+            for point in in_region:
+                s = point["strategy"]
+                if s not in strategy_best or point["ndcg"] > strategy_best[s]:
+                    strategy_best[s] = point["ndcg"]
+            if strategy_best:
+                region_best_per_dataset[region_name][dataset] = strategy_best
 
-        ndcgs = [run["ndcg@10"] for run in dataset_result["results"]]
-        ilads = [run["ilad"] for run in dataset_result["results"]]
-        ndcg_min, ndcg_max = min(ndcgs), max(ndcgs)
-        ilad_min, ilad_max = min(ilads), max(ilads)
+    region_avg: dict[str, dict[str, float]] = {}
+    for region, dataset_bests in region_best_per_dataset.items():
+        valid = [d for d in dataset_bests.values() if set(d.keys()) == all_strategies]
+        if not valid:
+            valid = list(dataset_bests.values())
 
-        for strategy in STRATEGIES:
-            runs = [
-                run for run in dataset_result["results"] if run["strategy"] == strategy and 0 < run["diversity"] < 1
-            ]
+        strategy_scores: dict[str, list[float]] = {}
+        for ds_bests in valid:
+            for s, score in ds_bests.items():
+                strategy_scores.setdefault(s, []).append(score)
+        region_avg[region] = {s: sum(v) / len(v) for s, v in strategy_scores.items() if v}
 
-            best_f1 = 0.0
-            best_run = None
+    return region_avg
 
-            for run in runs:
-                ndcg_norm = (run["ndcg@10"] - ndcg_min) / (ndcg_max - ndcg_min) if ndcg_max > ndcg_min else 0.0
-                ilad_norm = (run["ilad"] - ilad_min) / (ilad_max - ilad_min) if ilad_max > ilad_min else 0.0
 
-                if ndcg_norm + ilad_norm > 0:
-                    f1 = 2 * ndcg_norm * ilad_norm / (ndcg_norm + ilad_norm)
-                else:
-                    f1 = 0.0
+def _compute_regional_winners(results: list[dict]) -> dict:
+    """Compute which strategy achieves best nDCG in each diversity region."""
+    regions = {
+        "Low (0.3-0.5)": (0.3, 0.5),
+        "Moderate (0.5-0.7)": (0.5, 0.7),
+        "High (0.7-0.9)": (0.7, 0.9),
+        "Maximum (0.9+)": (0.9, 1.0),
+    }
 
-                if f1 > best_f1:
-                    best_f1 = f1
-                    best_run = run
+    all_points = _extract_all_points(results)
+    datasets = sorted(set(p["dataset"] for p in all_points))
 
-            if best_run:
-                best_per_dataset[dataset][strategy] = {
-                    "f1": best_f1,
-                    "ndcg": best_run["ndcg@10"],
-                    "ilad": best_run["ilad"],
-                    "lambda": best_run["diversity"],
-                }
-                all_scores.append({"strategy": strategy, "f1": best_f1})
+    regional_data, region_wins = _find_regional_winners(datasets, all_points, regions)
+    region_avg = _compute_region_averages(datasets, all_points, regions)
 
-    strategy_avg: dict[str, float] = {}
-    for strategy in STRATEGIES:
-        scores = [float(entry["f1"]) for entry in all_scores if entry["strategy"] == strategy]
-        strategy_avg[strategy] = sum(scores) / len(scores) if scores else 0.0
-
-    return best_per_dataset, strategy_avg
+    return {"per_dataset": regional_data, "aggregate": region_wins, "avg_ndcg": region_avg}
 
 
 def _format_retention_table(retention_table: dict) -> list[str]:
@@ -172,53 +171,6 @@ def _format_retention_table(retention_table: dict) -> list[str]:
     return lines
 
 
-def _format_ranking_table(f1_ranking: dict) -> list[str]:
-    """Format the F1 ranking table as markdown lines."""
-    lines = [
-        "## Overall Strategy Ranking\n",
-        "Ranking by average F1 score (harmonic mean of normalized nDCG and ILAD):\n",
-        "| Rank | Strategy | Avg F1 | Interpretation |",
-        "|:----:|----------|:------:|----------------|",
-    ]
-
-    sorted_ranking = sorted(f1_ranking.items(), key=lambda x: -x[1])
-    interpretations = {
-        "msd": "Best diversity with acceptable relevance",
-        "dpp": "Good balance of both metrics",
-        "mmr": "Conservative, relevance-focused",
-        "ssd": "Conservative, relevance-focused",
-    }
-    rank_labels = {0: "1.", 1: "2.", 2: "3."}
-
-    for idx, (strategy, score) in enumerate(sorted_ranking):
-        rank = rank_labels.get(idx, f"{idx + 1}.")
-        lines.append(f"| {rank} | **{strategy.upper()}** | {score:.3f} | {interpretations.get(strategy, '')} |")
-
-    lines.append("")
-    return lines
-
-
-def _format_f1_details(f1_per_dataset: dict) -> list[str]:
-    """Format the detailed F1 table as markdown lines."""
-    lines = [
-        "## Best F1 Score per Dataset\n",
-        "| Dataset | Strategy | λ | nDCG@10 | ILAD | F1 |",
-        "|---------|----------|--:|--------:|-----:|---:|",
-    ]
-
-    for dataset in sorted(f1_per_dataset.keys()):
-        for strategy in STRATEGIES:
-            if strategy in f1_per_dataset[dataset]:
-                entry = f1_per_dataset[dataset][strategy]
-                lines.append(
-                    f"| {dataset} | {strategy.upper()} | {entry['lambda']:.1f} | "
-                    f"{entry['ndcg']:.4f} | {entry['ilad']:.3f} | {entry['f1']:.3f} |"
-                )
-
-    lines.append("")
-    return lines
-
-
 def _format_regional_analysis(regional_data: dict) -> list[str]:
     """Format the regional winner analysis as markdown."""
     lines = [
@@ -240,29 +192,268 @@ def _format_regional_analysis(regional_data: dict) -> list[str]:
                 row.append("-")
         lines.append("| " + " | ".join(row) + " |")
 
-    # Add summary row
+    # Add summary using best nDCG per region (averaged across datasets)
     lines.append("")
-    lines.append("### Summary: Wins per Strategy by Region\n")
-    lines.append("| Region | SSD | DPP | MSD | MMR | Recommendation |")
-    lines.append("|--------|:---:|:---:|:---:|:---:|----------------|")
+    lines.append("### Summary: Best nDCG per Strategy by Region\n")
+    lines.append("For each region, what's the best nDCG each strategy can achieve (averaged across datasets)?\n")
+    lines.append("| Region | SSD | DPP | MSD | MMR | Best |")
+    lines.append("|--------|:---:|:---:|:---:|:---:|:----:|")
 
-    recommendations = {
-        "Low (0.3-0.5)": "Use **SSD** for light diversification",
-        "Moderate (0.5-0.7)": "Use **MSD** or **DPP** for moderate diversity",
-        "High (0.7-0.9)": "Use **MSD** for heavy diversification",
-        "Maximum (0.9+)": "Use **MSD** for maximum diversity",
-    }
+    avg_ndcg = regional_data.get("avg_ndcg", {})
 
     for region in region_order:
-        wins = regional_data["aggregate"].get(region, {})
+        region_avgs = avg_ndcg.get(region, {})
         row = [region]
+        best_strategy = ""
+        best_val = -1.0
         for s in ["ssd", "dpp", "msd", "mmr"]:
-            count = wins.get(s, 0)
-            row.append(str(count) if count > 0 else "-")
-        row.append(recommendations.get(region, ""))
+            val = region_avgs.get(s, 0)
+            if val > 0:
+                row.append(f"{val:.3f}")
+                if val > best_val:
+                    best_val = val
+                    best_strategy = s.upper()
+            else:
+                row.append("-")
+        row.append(f"**{best_strategy}**" if best_strategy else "-")
         lines.append("| " + " | ".join(row) + " |")
 
     lines.append("")
+    return lines
+
+
+def _trapezoidal_area(points: list[dict]) -> float:
+    """Compute area under curve using trapezoidal rule."""
+    if len(points) < 2:
+        return 0.0
+    sorted_pts = sorted(points, key=lambda p: p["ilad"])
+    area = 0.0
+    for i in range(len(sorted_pts) - 1):
+        dx = sorted_pts[i + 1]["ilad"] - sorted_pts[i]["ilad"]
+        avg_y = (sorted_pts[i]["ndcg"] + sorted_pts[i + 1]["ndcg"]) / 2
+        area += dx * avg_y
+    return area
+
+
+def _find_overlap_range(strategy_points: dict[str, list[dict]]) -> tuple[float, float]:
+    """Find ILAD range where all strategies have data points."""
+    max_mins = []
+    min_maxs = []
+    for points in strategy_points.values():
+        if points:
+            ilads = [p["ilad"] for p in points]
+            max_mins.append(min(ilads))
+            min_maxs.append(max(ilads))
+
+    if max_mins and min_maxs:
+        return max(max_mins), min(min_maxs)
+    return 0.0, 1.0
+
+
+def _compute_pareto_area(results: list[dict]) -> dict:
+    """
+    Compute area under each strategy's Pareto curve per dataset.
+
+    Uses trapezoidal integration, sorted by ILAD.
+    Higher area = better overall relevance-diversity tradeoff.
+    """
+    strategies = ["mmr", "msd", "dpp", "ssd"]
+
+    # Collect points per dataset per strategy
+    dataset_strategy_points: dict[str, dict[str, list[dict]]] = {}
+    for dataset_result in results:
+        dataset = dataset_result["dataset"]
+        dataset_strategy_points[dataset] = {s: [] for s in strategies}
+        for run in dataset_result["results"]:
+            dataset_strategy_points[dataset][run["strategy"]].append({"ndcg": run["ndcg@10"], "ilad": run["ilad"]})
+
+    full_areas: dict[str, dict[str, float]] = {s: {} for s in strategies}
+    overlap_areas: dict[str, dict[str, float]] = {s: {} for s in strategies}
+
+    for dataset, strategy_points in dataset_strategy_points.items():
+        overlap_lo, overlap_hi = _find_overlap_range(strategy_points)
+        for s, points in strategy_points.items():
+            full_areas[s][dataset] = _trapezoidal_area(points)
+            overlap_pts = [p for p in points if overlap_lo <= p["ilad"] <= overlap_hi]
+            overlap_areas[s][dataset] = _trapezoidal_area(overlap_pts)
+
+    # Average across datasets
+    avg_full = {s: sum(full_areas[s].values()) / len(full_areas[s]) if full_areas[s] else 0.0 for s in strategies}
+    avg_overlap = {
+        s: sum(overlap_areas[s].values()) / len(overlap_areas[s]) if overlap_areas[s] else 0.0 for s in strategies
+    }
+
+    return {
+        "full_per_dataset": full_areas,
+        "overlap_per_dataset": overlap_areas,
+        "avg_full": avg_full,
+        "avg_overlap": avg_overlap,
+    }
+
+
+def _compute_pareto_dominance(results: list[dict]) -> dict:
+    """
+    Compute Pareto frontier dominance for each strategy.
+
+    A point is on the Pareto frontier if no other point has both higher nDCG
+    and higher ILAD. Returns count of frontier points per strategy per dataset.
+    """
+    strategies = ["mmr", "msd", "dpp", "ssd"]
+
+    # Collect all points per dataset
+    dataset_points: dict[str, list[dict]] = {}
+    for dataset_result in results:
+        dataset = dataset_result["dataset"]
+        dataset_points[dataset] = []
+        for run in dataset_result["results"]:
+            dataset_points[dataset].append(
+                {
+                    "strategy": run["strategy"],
+                    "ndcg": run["ndcg@10"],
+                    "ilad": run["ilad"],
+                }
+            )
+
+    # Compute Pareto frontier for each dataset
+    frontier_counts: dict[str, dict[str, int]] = {s: {} for s in strategies}
+    total_frontier: dict[str, int] = {s: 0 for s in strategies}
+
+    for dataset, points in dataset_points.items():
+        for point in points:
+            is_dominated = False
+            for other in points:
+                if other is point:
+                    continue
+                # Check if 'other' dominates 'point' (better or equal on both, strictly better on at least one)
+                if other["ndcg"] >= point["ndcg"] and other["ilad"] >= point["ilad"]:
+                    if other["ndcg"] > point["ndcg"] or other["ilad"] > point["ilad"]:
+                        is_dominated = True
+                        break
+
+            if not is_dominated:
+                strategy = point["strategy"]
+                frontier_counts[strategy][dataset] = frontier_counts[strategy].get(dataset, 0) + 1
+                total_frontier[strategy] += 1
+
+    # Compute percentage of all frontier points
+    total_points = sum(total_frontier.values())
+    frontier_pct: dict[str, float] = {
+        s: (count / total_points * 100) if total_points > 0 else 0.0 for s, count in total_frontier.items()
+    }
+
+    return {
+        "per_dataset": frontier_counts,
+        "total": total_frontier,
+        "percentage": frontier_pct,
+    }
+
+
+def _compute_multi_metric_summary(results: list[dict]) -> dict:
+    """
+    Compute Pareto area for multiple metric combinations.
+
+    Analyzes: nDCG vs ILAD, MRR vs ILAD, nDCG vs ILMD, MRR vs ILMD
+    """
+    strategies = ["mmr", "msd", "dpp", "ssd"]
+    metric_pairs = [
+        ("ndcg@10", "ilad", "nDCG vs ILAD"),
+        ("mrr", "ilad", "MRR vs ILAD"),
+        ("ndcg@10", "ilmd", "nDCG vs ILMD"),
+        ("mrr", "ilmd", "MRR vs ILMD"),
+    ]
+
+    def _compute_area(points: list[dict], x_key: str, y_key: str) -> float:
+        """Compute area under curve using trapezoidal rule."""
+        if len(points) < 2:
+            return 0.0
+        sorted_pts = sorted(points, key=lambda p: p[x_key])
+        area = 0.0
+        for i in range(len(sorted_pts) - 1):
+            dx = sorted_pts[i + 1][x_key] - sorted_pts[i][x_key]
+            avg_y = (sorted_pts[i][y_key] + sorted_pts[i + 1][y_key]) / 2
+            area += dx * avg_y
+        return area
+
+    summary: dict[str, dict[str, float]] = {label: {} for _, _, label in metric_pairs}
+
+    for rel_key, div_key, label in metric_pairs:
+        strategy_areas: dict[str, list[float]] = {s: [] for s in strategies}
+
+        for dataset_result in results:
+            for s in strategies:
+                points = [
+                    {rel_key: run[rel_key], div_key: run[div_key]}
+                    for run in dataset_result["results"]
+                    if run["strategy"] == s
+                ]
+                area = _compute_area(points, div_key, rel_key)
+                strategy_areas[s].append(area)
+
+        # Average across datasets
+        for s in strategies:
+            summary[label][s] = sum(strategy_areas[s]) / len(strategy_areas[s]) if strategy_areas[s] else 0.0
+
+    return summary
+
+
+def _format_multi_metric_table(multi_metric: dict) -> list[str]:
+    """Format multi-metric summary as markdown table."""
+    lines = [
+        "### Multi-Metric Comparison\n",
+        "Area under curve for different relevance-diversity metric combinations:\n",
+        "| Metrics | SSD | DPP | MSD | MMR | Best |",
+        "|---------|:---:|:---:|:---:|:---:|:----:|",
+    ]
+
+    for label, areas in multi_metric.items():
+        row = [label]
+        best_s = ""
+        best_val = -1.0
+        for s in ["ssd", "dpp", "msd", "mmr"]:
+            val = areas.get(s, 0)
+            row.append(f"{val:.4f}")
+            if val > best_val:
+                best_val = val
+                best_s = s.upper()
+        row.append(f"**{best_s}**")
+        lines.append("| " + " | ".join(row) + " |")
+
+    lines.append("")
+    lines.append("*Higher area = better overall tradeoff between that relevance and diversity metric.*")
+    lines.append("")
+    return lines
+
+
+def _format_pareto_summary(pareto_data: dict, area_data: dict) -> list[str]:
+    """Format Pareto dominance and area summary as markdown."""
+    lines = [
+        "## Overall Performance Summary\n",
+        "### Pareto Frontier Analysis\n",
+        "Points on the Pareto frontier represent optimal relevance-diversity tradeoffs.\n",
+        "| Strategy | Frontier Points | Share | Avg Area (Full) | Avg Area (Overlap) |",
+        "|----------|----------------:|------:|----------------:|-------------------:|",
+    ]
+
+    total = pareto_data["total"]
+    pct = pareto_data["percentage"]
+    avg_full = area_data["avg_full"]
+    avg_overlap = area_data["avg_overlap"]
+
+    # Sort by overlap area descending (fairest comparison)
+    for strategy in sorted(total.keys(), key=lambda s: avg_overlap.get(s, 0), reverse=True):
+        lines.append(
+            f"| **{strategy.upper()}** | {total[strategy]} | {pct[strategy]:.1f}% | "
+            f"{avg_full.get(strategy, 0):.4f} | {avg_overlap.get(strategy, 0):.4f} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "*Full Area*: Area under each strategy's curve across all ILAD values it can reach.",
+            "*Overlap Area*: Area only in the ILAD range where all strategies compete (fairest comparison).",
+            "",
+        ]
+    )
     return lines
 
 
@@ -293,7 +484,6 @@ def _format_full_results(results: list[dict]) -> list[str]:
 def generate_markdown(results: list[dict]) -> str:
     """Generate markdown report content from benchmark results."""
     retention_table = _compute_retention_table(results, retention_pct=0.95)
-    f1_per_dataset, f1_ranking = _compute_f1_scores(results)
     regional_data = _compute_regional_winners(results)
 
     md_lines = [
@@ -317,17 +507,29 @@ def generate_markdown(results: list[dict]) -> str:
         "",
     ]
 
+    pareto_data = _compute_pareto_dominance(results)
+    area_data = _compute_pareto_area(results)
+    multi_metric = _compute_multi_metric_summary(results)
+    md_lines.extend(_format_pareto_summary(pareto_data, area_data))
+    md_lines.extend(_format_multi_metric_table(multi_metric))
     md_lines.extend(_format_regional_analysis(regional_data))
     md_lines.extend(_format_retention_table(retention_table))
-    md_lines.extend(_format_ranking_table(f1_ranking))
-    md_lines.extend(_format_f1_details(f1_per_dataset))
     md_lines.extend(_format_full_results(results))
 
     return "\n".join(md_lines)
 
 
-def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
-    """Generate Pareto frontier plot showing relevance vs diversity tradeoff."""
+def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metric: str = "ilad") -> None:
+    """
+    Generate Pareto frontier plot showing relevance vs diversity tradeoff.
+
+    Args:
+    ----
+        all_data: List of benchmark results.
+        output_path: Path to save the plot.
+        diversity_metric: 'ilad' for average diversity, 'ilmd' for minimum diversity.
+
+    """
     import matplotlib.pyplot as plt
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
@@ -344,6 +546,8 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
         "goodreads-rating": "Goodreads",
     }
 
+    metric_label = "ILAD (Avg Diversity)" if diversity_metric == "ilad" else "ILMD (Min Diversity)"
+
     for ax, dataset in zip(axes, datasets):
         ax.axvspan(0.3, 0.5, alpha=0.1, color="blue", label="_Low")
         ax.axvspan(0.5, 0.7, alpha=0.1, color="green", label="_Moderate")
@@ -355,18 +559,18 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
             strategy_points = sorted(strategy_points, key=lambda x: x["lambda"])
 
             if strategy_points:
-                x_vals = [p["ilad"] for p in strategy_points]
+                x_vals = [p[diversity_metric] for p in strategy_points]
                 y_vals = [p["ndcg"] for p in strategy_points]
                 ax.plot(
                     x_vals, y_vals, "o-", color=colors[strategy], label=strategy.upper(), markersize=7, linewidth=2.5
                 )
 
-        ax.set_xlabel("ILAD (Diversity) →", fontsize=10)
+        ax.set_xlabel(f"{metric_label} →", fontsize=10)
         ax.set_ylabel("nDCG@10 (Relevance) →", fontsize=10)
         ax.set_title(name_map.get(dataset, dataset), fontsize=12, fontweight="bold")
         ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
         ax.grid(True, alpha=0.3, linestyle="--")
-        ax.set_xlim(0.25, 1.05)
+        ax.set_xlim(0.0, 1.05)
 
     first_ax = axes[0]
     y_top = first_ax.get_ylim()[1]
@@ -375,7 +579,8 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path) -> None:
     first_ax.text(0.8, y_top * 0.95, "High", ha="center", fontsize=8, color="orange", alpha=0.7)
     first_ax.text(0.95, y_top * 0.95, "Max", ha="center", fontsize=8, color="red", alpha=0.7)
 
-    plt.suptitle("Relevance vs Diversity Tradeoff by Strategy", fontsize=14, fontweight="bold", y=1.02)
+    title_suffix = "(Average Diversity)" if diversity_metric == "ilad" else "(Minimum Diversity)"
+    plt.suptitle(f"Relevance vs Diversity Tradeoff {title_suffix}", fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
     fig.savefig(output_path, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close()
@@ -449,6 +654,7 @@ def generate_report(results_dir: Path) -> None:
                     "ndcg": run["ndcg@10"],
                     "mrr": run["mrr"],
                     "ilad": run["ilad"],
+                    "ilmd": run["ilmd"],
                 }
             )
 
@@ -457,9 +663,15 @@ def generate_report(results_dir: Path) -> None:
     report_path.write_text(md_content)
     logger.debug(f"Saved: {report_path}")
 
-    pareto_path = results_dir / "pareto.png"
-    generate_pareto_plot(all_data, pareto_path)
-    logger.debug(f"Saved: {pareto_path}")
+    # Generate ILAD plot (average diversity)
+    pareto_ilad_path = results_dir / "pareto_ilad.png"
+    generate_pareto_plot(all_data, pareto_ilad_path, diversity_metric="ilad")
+    logger.debug(f"Saved: {pareto_ilad_path}")
+
+    # Generate ILMD plot (minimum diversity)
+    pareto_ilmd_path = results_dir / "pareto_ilmd.png"
+    generate_pareto_plot(all_data, pareto_ilmd_path, diversity_metric="ilmd")
+    logger.debug(f"Saved: {pareto_ilmd_path}")
 
     latency_path = results_dir / "latency.png"
     generate_latency_plot(latency_path)

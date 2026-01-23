@@ -33,7 +33,9 @@ class BenchmarkConfig:
 
     # Strategies
     strategies: list[Strategy] = field(default_factory=lambda: [Strategy.MMR, Strategy.MSD, Strategy.DPP, Strategy.SSD])
-    diversity_values: list[float] = field(default_factory=lambda: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    diversity_values: list[float] = field(
+        default_factory=lambda: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    )
 
     # Output
     output_dir: Path = Path("benchmarks/results")

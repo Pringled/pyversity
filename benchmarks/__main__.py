@@ -15,7 +15,7 @@ import logging
 import zipfile
 from pathlib import Path
 
-import requests
+import requests  # type: ignore[import-untyped]
 from tqdm import tqdm
 
 from benchmarks.core import (
