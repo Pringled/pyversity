@@ -161,8 +161,6 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 | MSD      | 0.5              | 0.027 | 0.78 | 0.08 | 0.13     |
 | MMR      | 0.7              | 0.028 | 0.50 | 0.10 | 0.12     |
 
-*Combined = geometric mean of normalized ILAD and ILMD gains*
-
 </details>
 
 ## Datasets
