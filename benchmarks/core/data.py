@@ -81,7 +81,8 @@ def load_dataset(
     # Resolve dataset info
     if isinstance(dataset, str):
         if dataset not in DATASET_REGISTRY:
-            raise ValueError(f"Unknown dataset: {dataset}. Known: {list(DATASET_REGISTRY.keys())}")
+            msg = f"Unknown dataset: {dataset}. Known: {list(DATASET_REGISTRY.keys())}"
+            raise ValueError(msg)
         info = DATASET_REGISTRY[dataset]
     else:
         info = dataset
@@ -96,7 +97,8 @@ def load_dataset(
     elif info.dataset_type == DatasetType.LASTFM:
         df = _load_lastfm(Path(info.path))
     else:
-        raise ValueError(f"Unknown dataset type: {info.dataset_type}")
+        msg = f"Unknown dataset type: {info.dataset_type}"
+        raise ValueError(msg)
 
     logger.debug(f"Loaded {len(df):,} raw interactions")
 
@@ -167,4 +169,5 @@ def _load_huggingface(dataset_id: str) -> pd.DataFrame:
         df["user"] = pd.factorize(df["user"])[0]
         return df[["user", "item", "value"]]
 
-    raise ValueError(f"Unknown HuggingFace dataset format: {list(df.columns)}")
+    msg = f"Unknown HuggingFace dataset format: {list(df.columns)}"
+    raise ValueError(msg)

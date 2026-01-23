@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 def run_benchmark(config: BenchmarkConfig) -> dict:
     """Run benchmark suite and return results dictionary."""
     if config.dataset is None:
-        raise ValueError("config.dataset must be specified")
+        msg = "config.dataset must be specified"
+        raise ValueError(msg)
 
     rng = np.random.default_rng(config.seed)
 

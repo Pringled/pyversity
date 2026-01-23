@@ -18,9 +18,6 @@ def run_latency_benchmark(
 
     Measures how latency scales with number of candidates for each strategy.
     Uses 256d embeddings by default (common for modern embedding models).
-
-    Note: All strategies scale linearly with k. MMR/MSD are O(k·n), while
-    DPP/SSD are O(k²·n). Additionally, SSD has O(d) factor due to Gram-Schmidt.
     """
     if candidate_sizes is None:
         candidate_sizes = [100, 250, 500, 1000, 2000, 5000]
@@ -34,9 +31,9 @@ def run_latency_benchmark(
     ]
 
     results = []
-    for n_candidates in candidate_sizes:
-        embeddings = rng.standard_normal((n_candidates, embedding_dim)).astype(np.float32)
-        scores = rng.uniform(0, 1, n_candidates).astype(np.float32)
+    for num_candidates in candidate_sizes:
+        embeddings = rng.standard_normal((num_candidates, embedding_dim)).astype(np.float32)
+        scores = rng.uniform(0, 1, num_candidates).astype(np.float32)
 
         for strategy in strategies:
             latencies = []
@@ -53,7 +50,7 @@ def run_latency_benchmark(
 
             results.append(
                 {
-                    "n_candidates": n_candidates,
+                    "n_candidates": num_candidates,
                     "strategy": strategy.value,
                     "latency_ms": float(np.median(latencies)),
                     "latency_std": float(np.std(latencies)),

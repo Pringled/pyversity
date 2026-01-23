@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -6,12 +8,7 @@ from pyversity import Strategy
 
 @dataclass
 class BenchmarkConfig:
-    """
-    Configuration for benchmark runs.
-
-    All parameters have sensible defaults. Only `dataset` must be specified
-    before running a benchmark.
-    """
+    """Configuration for benchmark runs."""
 
     # Dataset (name from registry or DatasetInfo)
     dataset: str | None = None
@@ -42,5 +39,5 @@ class BenchmarkConfig:
     seed: int = 42
 
     def __post_init__(self) -> None:
-        """Convert paths to Path objects."""
+        """Post-initialization processing."""
         self.output_dir = Path(self.output_dir)

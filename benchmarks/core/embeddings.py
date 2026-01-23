@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import numpy as np
@@ -12,11 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_embeddings(data: InteractionData, dim: int = 64, seed: int = 42) -> NDArray[np.float32]:
-    """
-    Generate item embeddings using SVD on the user-item matrix.
-
-    Returns L2-normalized embeddings of shape (n_items, dim).
-    """
+    """Generate L2-normalized item embeddings using SVD on the user-item matrix."""
     ui_matrix = sparse.coo_matrix(
         (np.ones(len(data.user_ids)), (data.user_ids, data.item_ids)),
         shape=(data.n_users, data.n_items),
@@ -38,20 +36,20 @@ def compute_similarity_matrix(embeddings: NDArray[np.float32], top_k: int = 100)
     similarity = embeddings @ embeddings.T
 
     rows, cols, data = [], [], []
-    for i in range(n_items):
-        sims = similarity[i].copy()
-        sims[i] = -np.inf  # Exclude self
+    for item_idx in range(n_items):
+        sims = similarity[item_idx].copy()
+        sims[item_idx] = -np.inf  # Exclude self
 
         if top_k < n_items - 1:
-            top_idx = np.argpartition(sims, -top_k)[-top_k:]
+            top_indices = np.argpartition(sims, -top_k)[-top_k:]
         else:
-            top_idx = np.arange(n_items)[np.arange(n_items) != i]
+            top_indices = np.arange(n_items)[np.arange(n_items) != item_idx]
 
-        for j in top_idx:
-            if sims[j] > 0:
-                rows.append(i)
-                cols.append(j)
-                data.append(sims[j])
+        for neighbor_idx in top_indices:
+            if sims[neighbor_idx] > 0:
+                rows.append(item_idx)
+                cols.append(neighbor_idx)
+                data.append(sims[neighbor_idx])
 
     return sparse.coo_matrix((data, (rows, cols)), shape=(n_items, n_items), dtype=np.float32).tocsr()
 
@@ -83,6 +81,6 @@ def get_candidates(
 
     sorted_items = sorted(scores.items(), key=lambda x: -x[1])[:max_candidates]
     return (
-        np.array([c[0] for c in sorted_items], dtype=np.int64),
-        np.array([c[1] for c in sorted_items], dtype=np.float32),
+        np.array([item[0] for item in sorted_items], dtype=np.int64),
+        np.array([item[1] for item in sorted_items], dtype=np.float32),
     )
