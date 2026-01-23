@@ -18,6 +18,7 @@ In addition, we measure latency of each strategy as the number of candidates sca
 - [Key Findings](#key-findings)
 - [Relevance-Diversity Tradeoff](#relevance-diversity-tradeoff)
 - [Latency](#latency)
+- [Detailed Results](#detailed-results)
 - [Usage](#usage)
 - [Datasets](#datasets)
 - [Methodology](#methodology)
@@ -25,9 +26,9 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance**.
+We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance** (see [Methodology](#methodology) for details).
 
-### Strategy Scorecard
+### Strategy Performance
 
 | Strategy | Combined Score | Best ILAD | Best ILMD |
 |----------|:--------------:|:---------:|:---------:|
@@ -36,15 +37,15 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 | MSD      | 0.226          | **0.78**  | 0.15      |
 | MMR      | 0.213          | 0.58      | 0.18      |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains. Best ILAD/ILMD = average across datasets while maintaining ≥95% baseline relevance.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Best ILAD/ILMD = average across datasets while maintaining ≥95% baseline relevance.*
 
-### Best Configs Per Goal (≥95% baseline nDCG)
+### Summary
 
-| Goal | Winner | Wins | Why |
-|------|--------|:----:|-----|
-| **Best Overall** | **DPP** | 4/4 | Highest combined diversity (both ILAD and ILMD) |
-| **Max ILAD** (overall variety) | **MSD** | 3/4 | Optimizes sum of pairwise distances |
-| **Max ILMD** (no similar pairs) | **DPP** | 4/4 | Best worst-case diversity guarantee |
+| Goal | Winner | Why |
+|------|--------|-----|
+| **Best Overall** | **DPP** | Highest combined diversity (both ILAD and ILMD) |
+| **Max ILAD** (overall variety) | **MSD** | Optimizes sum of pairwise distances |
+| **Max ILMD** (no similar pairs) | **DPP** | Best worst-case diversity guarantee |
 
 ### Recommendations
 
@@ -111,8 +112,7 @@ python -m benchmarks run
 python -m benchmarks report
 ```
 
-<details>
-<summary>Detailed Results</summary>
+## Detailed Results
 
 ### Strategies
 
@@ -131,8 +131,6 @@ python -m benchmarks report
 | Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 | Amazon-VG | MSD (`diversity`=0.5) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
 | Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
-
-</details>
 
 <details>
 <summary>Per-Dataset Detailed Metrics</summary>
@@ -179,28 +177,6 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 
 </details>
 
-<details>
-<summary>How Combined Score is Computed</summary>
-
-For each dataset, we normalize ILAD and ILMD gains to [0, 1]:
-
-```
-ILAD_gain = (ILAD - ILAD_min) / (ILAD_max - ILAD_min)
-ILMD_gain = (ILMD - ILMD_min) / (ILMD_max - ILMD_min)
-Combined = sqrt(ILAD_gain × ILMD_gain)
-```
-
-The geometric mean ensures a strategy must improve *both* metrics to score well. The final Combined Score in the scorecard is the average across all 4 datasets.
-
-Example for DPP on Amazon Video Games:
-- ILAD_gain ≈ 0.83 (high overall variety)
-- ILMD_gain ≈ 0.55 (good worst-case diversity)
-- Combined = sqrt(0.83 × 0.55) ≈ 0.68
-
-*Raw JSON results are in `results/*.json`*
-
-</details>
-
 ## Datasets
 
 | Dataset | Domain | Interactions | Source |
@@ -225,7 +201,7 @@ Example for DPP on Amazon Video Games:
 We use a **relevance floor** approach to ensure fair comparison:
 
 1. **Baseline**: For each dataset, compute baseline nDCG at `diversity=0` (no diversification)
-2. **Filter**: Keep only configs where nDCG ≥ 95% of baseline (deployable configurations)
+2. **Filter**: Keep only configs where nDCG ≥ 95% of baseline to ensure relevance
 3. **Compare**: Among feasible configs, find which strategy achieves:
    - **Max ILAD**: Best overall diversity spread
    - **Max ILMD**: Best worst-case diversity (no similar pairs)
