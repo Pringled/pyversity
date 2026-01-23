@@ -10,16 +10,17 @@ logger = logging.getLogger(__name__)
 
 STRATEGIES = ["mmr", "msd", "dpp", "ssd"]
 
-# Diversity regions for analysis
+# Diversity regions for analysis (based on observed ranges across datasets)
+# ILAD observed: 0.46-0.99, ILMD observed: 0.00-0.73
 ILAD_REGIONS = {
-    "low": (0.3, 0.5),
-    "moderate": (0.5, 0.7),
-    "high": (0.7, 0.9),
+    "low": (0.45, 0.60),
+    "moderate": (0.60, 0.75),
+    "high": (0.75, 1.0),
 }
 ILMD_REGIONS = {
-    "low": (0.05, 0.15),
-    "moderate": (0.15, 0.25),
-    "high": (0.25, 0.35),
+    "low": (0.0, 0.20),
+    "moderate": (0.20, 0.45),
+    "high": (0.45, 0.75),
 }
 
 

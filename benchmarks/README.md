@@ -35,13 +35,13 @@ We count how many datasets each strategy achieves the highest nDCG in each diver
 
 | Metric | Region   | Range       | MMR | MSD | DPP | SSD | Best    |
 |--------|----------|-------------|:---:|:---:|:---:|:---:|---------|
-| ILAD   | Low      | 0.3-0.5     | 0   | 1   | 1   | 1   | Tied    |
-| ILAD   | Moderate | 0.5-0.7     | 0   | 2   | 1   | 0   | **MSD** |
-| ILAD   | High     | 0.7-0.9     | 1   | 3   | 0   | 0   | **MSD** |
-| ILMD   | Low      | 0.05-0.15   | 1   | 0   | 2   | 0   | **DPP** |
-| ILMD   | Moderate | 0.15-0.25   | 1   | 0   | 1   | 0   | Tied    |
-| ILMD   | High     | 0.25-0.35   | 1   | 0   | 3   | 0   | **DPP** |
-| | | **Total** | **4** | **6** | **8** | **1** | **DPP** |
+| ILAD   | Low      | 0.45-0.60   | 0   | 2   | 1   | 0   | **MSD** |
+| ILAD   | Moderate | 0.60-0.75   | 0   | 3   | 0   | 0   | **MSD** |
+| ILAD   | High     | 0.75-1.00   | 0   | 3   | 1   | 0   | **MSD** |
+| ILMD   | Low      | 0.00-0.20   | 2   | 0   | 2   | 0   | Tied    |
+| ILMD   | Moderate | 0.20-0.45   | 1   | 0   | 3   | 0   | **DPP** |
+| ILMD   | High     | 0.45-0.75   | 2   | 0   | 2   | 0   | Tied    |
+| | | **Total** | **5** | **8** | **9** | **0** | **DPP** |
 
 *Wins per region: dataset has a "win" if the strategy achieves highest avg nDCG in that diversity range. Some rows sum to <4 when a dataset has no data points in that region.*
 
