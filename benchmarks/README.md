@@ -25,16 +25,16 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance**. This ensures we only compare "deployable" configurations.
+We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance**.
 
 ### Strategy Scorecard
 
-| Strategy | Combined Score | Typical λ | Avg nDCG vs Baseline |
-|----------|:--------------:|:---------:|:--------------------:|
-| **DPP**  | **0.439**      | 0.85      | 99.3%                |
-| SSD      | 0.236          | 0.85      | 101.9%               |
-| MSD      | 0.226          | 0.50      | 98.7%                |
-| MMR      | 0.213          | 0.78      | 101.4%               |
+| Strategy | Combined Score | Typical `diversity` | Avg nDCG vs Baseline |
+|----------|:--------------:|:-------------------:|:--------------------:|
+| **DPP**  | **0.439**      | 0.85                | 99%                  |
+| SSD      | 0.236          | 0.85                | 100%                 |
+| MSD      | 0.226          | 0.50                | 99%                  |
+| MMR      | 0.213          | 0.78                | 100%                 |
 
 *Combined Score = geometric mean of normalized ILAD and ILMD gains. Higher = better balance of both diversity metrics.*
 
@@ -127,10 +127,10 @@ python -m benchmarks report
 
 | Dataset | Max ILAD | Max ILMD | Best Overall |
 |---------|:--------:|:--------:|:------------:|
-| MovieLens-32M | DPP (λ=0.9) | DPP (λ=0.9) | DPP (λ=0.9) |
-| Last.FM | MSD (λ=0.6) | DPP (λ=0.8) | DPP (λ=0.8) |
-| Amazon-VG | MSD (λ=0.5) | DPP (λ=0.9) | DPP (λ=0.9) |
-| Goodreads | MSD (λ=0.5) | DPP (λ=0.8) | DPP (λ=0.8) |
+| MovieLens-32M | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
+| Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
+| Amazon-VG | MSD (`diversity`=0.5) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
+| Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 
 *Raw JSON results are in `results/*.json`*
 
