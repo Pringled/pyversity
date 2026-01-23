@@ -31,24 +31,26 @@ We evaluate using two diversity metrics that capture different aspects:
 
 ### Dataset Wins by Region
 
-We count how many datasets each strategy achieves the highest nDCG in each diversity region:
+We count how many datasets each strategy achieves the **highest max nDCG** in each diversity region.
+Regions are computed dynamically by dividing the observed range into thirds:
 
 | Metric | Region   | Range       | MMR | MSD | DPP | SSD | Best    |
 |--------|----------|-------------|:---:|:---:|:---:|:---:|---------|
-| ILAD   | Low      | 0.45-0.60   | 0   | 2   | 1   | 0   | **MSD** |
-| ILAD   | Moderate | 0.60-0.75   | 0   | 3   | 0   | 0   | **MSD** |
-| ILAD   | High     | 0.75-1.00   | 0   | 3   | 1   | 0   | **MSD** |
-| ILMD   | Low      | 0.00-0.20   | 2   | 0   | 2   | 0   | MMR/DPP |
-| ILMD   | Moderate | 0.20-0.45   | 1   | 0   | 3   | 0   | **DPP** |
-| ILMD   | High     | 0.45-0.75   | 2   | 0   | 2   | 0   | MMR/DPP |
-| | | **Total** | **5** | **8** | **9** | **0** | **DPP** |
+| ILAD   | Low      | 0.33-0.55   | 0   | 1   | 1   | 1   | Tied    |
+| ILAD   | Moderate | 0.55-0.77   | 0   | 2   | 1   | 0   | **MSD** |
+| ILAD   | High     | 0.77-1.00   | 0   | 3   | 1   | 0   | **MSD** |
+| ILMD   | Low      | 0.04-0.29   | 1   | 1   | 1   | 1   | Tied    |
+| ILMD   | Moderate | 0.29-0.54   | 1   | 0   | 2   | 1   | **DPP** |
+| ILMD   | High     | 0.54-0.79   | 2   | 0   | 1   | 0   | **MMR** |
+| | | **Total** | **4** | **7** | **7** | **3** | **MSD/DPP** |
 
-*Wins per region: dataset has a "win" if the strategy achieves highest avg nDCG in that diversity range. Some rows sum to <4 when a dataset has no data points in that region.*
+*Wins per region: strategy with highest max nDCG in that diversity range wins. Some rows sum to <4 when a dataset has no data points in that region.*
 
 **Key insight:**
-- **DPP** wins overall—best at balancing relevance with ILMD (no similar pairs)
-- **MSD** dominates ILAD—best when you want maximum variety
-- **MMR** is a solid baseline with wins across regions
+- **MSD** and **DPP** tied at 7 wins each—but excel at different diversity metrics
+- **MSD** dominates ILAD—best for maximum overall variety
+- **DPP** excels at ILMD—best at ensuring no similar pairs slip through
+- **MMR** wins high ILMD regions—competitive simple baseline
 - **SSD** shines in sequence-aware settings (see note below)
 
 > **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
@@ -60,11 +62,11 @@ We count how many datasets each strategy achieves the highest nDCG in each diver
 
 | Goal | Strategy | diversity | Why |
 |-----------|----------|-----------|-----|
-| Maximum variety | **MSD** | 0.7-1.0 | Dominates ILAD across all regions |
-| Avoid similar pairs | **DPP** | 0.5-0.8 | Best ILMD wins, balances relevance |
-| Balanced tradeoff | **DPP** | 0.4-0.6 | Most total wins (8), good on both metrics |
+| Maximum variety | **MSD** | 0.7-1.0 | Dominates ILAD (best overall spread) |
+| Avoid similar pairs | **DPP** | 0.5-0.8 | Best ILMD in moderate region |
+| Balanced tradeoff | **DPP** | 0.4-0.6 | Strong on both ILAD and ILMD |
 | Sequence-aware feeds | **SSD** | 0.3-0.5 | Use with `recent_embeddings` |
-| Simple baseline | **MMR** | 0.3-0.5 | Easy to implement and tune |
+| Simple baseline | **MMR** | 0.3-0.5 | Easy to implement, competitive |
 
 *`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
@@ -173,20 +175,16 @@ python -m benchmarks report
 For each diversity region (e.g., ILAD 0.5-0.7), we:
 
 1. **Filter** each strategy's results to points within that region
-2. **Find best nDCG** achieved by each strategy in that region
-3. **Compare across strategies** per dataset—the strategy with highest nDCG "wins" that dataset
+2. **Find max nDCG** achieved by each strategy in that region
+3. **Compare across strategies** per dataset—the strategy with highest max nDCG "wins" that dataset
 4. **Count wins** across all 4 datasets to determine the overall leader
 
-This approach measures: *"At a given diversity level, which strategy maintains the best relevance?"*
+This approach measures: *"At a given diversity level, which strategy can achieve the best relevance?"*
 
-We use three regions per metric based on observed ranges across all datasets:
-- **ILAD range**: 0.46–0.99 across all strategies/datasets → regions at 0.45-0.60, 0.60-0.75, 0.75-1.00
-- **ILMD range**: 0.00–0.73 across all strategies/datasets → regions at 0.00-0.20, 0.20-0.45, 0.45-0.75
-
-Regions:
-- **Low**: Where diversification begins
-- **Moderate**: Balanced tradeoff zone
-- **High**: Strong diversity
+Regions are computed dynamically by dividing the observed metric range (across all strategies and datasets) into thirds:
+- **Low**: First third of observed range
+- **Moderate**: Middle third
+- **High**: Top third
 
 *Note: Not all strategies reach all regions on all datasets. A "-" in the per-dataset table means no data points in that region.*
 

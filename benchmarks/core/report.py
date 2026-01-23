@@ -10,33 +10,50 @@ logger = logging.getLogger(__name__)
 
 STRATEGIES = ["mmr", "msd", "dpp", "ssd"]
 
-# Diversity regions for analysis (based on observed ranges across datasets)
-# ILAD observed: 0.46-0.99, ILMD observed: 0.00-0.73
-ILAD_REGIONS = {
-    "low": (0.45, 0.60),
-    "moderate": (0.60, 0.75),
-    "high": (0.75, 1.0),
-}
-ILMD_REGIONS = {
-    "low": (0.0, 0.20),
-    "moderate": (0.20, 0.45),
-    "high": (0.45, 0.75),
-}
+
+def _compute_dynamic_regions(all_data: list[dict], metric: str) -> dict[str, tuple[float, float]]:
+    """Compute diversity regions dynamically by dividing observed range into thirds."""
+    values = [p[metric] for p in all_data if metric in p]
+    if not values:
+        # Fallback defaults
+        if metric == "ilad":
+            return {"low": (0.45, 0.60), "moderate": (0.60, 0.75), "high": (0.75, 1.0)}
+        return {"low": (0.0, 0.20), "moderate": (0.20, 0.45), "high": (0.45, 0.75)}
+
+    min_val = min(values)
+    max_val = max(values)
+    step = (max_val - min_val) / 3
+
+    return {
+        "low": (min_val, min_val + step),
+        "moderate": (min_val + step, min_val + 2 * step),
+        "high": (min_val + 2 * step, max_val + 0.01),  # +0.01 to include max
+    }
 
 
 def _compute_regional_winners(
     all_data: list[dict],
-) -> dict[str, dict[str, dict[str, int]]]:
+) -> tuple[dict[str, dict[str, dict[str, int]]], dict[str, dict[str, tuple[float, float]]]]:
     """
     Count dataset wins for each strategy in each diversity region.
 
     A "win" means having the highest average nDCG for that region on a specific dataset.
-    Returns dict mapping metric -> region -> strategy -> win_count.
+
+    Returns
+    -------
+        - results: dict mapping metric -> region -> strategy -> win_count
+        - ranges: dict mapping metric -> region -> (low, high) bounds
+
     """
     results: dict[str, dict[str, dict[str, int]]] = {"ilad": {}, "ilmd": {}}
     datasets = sorted(set(p["dataset"] for p in all_data))
 
-    for metric, regions in [("ilad", ILAD_REGIONS), ("ilmd", ILMD_REGIONS)]:
+    # Compute dynamic regions based on actual data
+    ilad_regions = _compute_dynamic_regions(all_data, "ilad")
+    ilmd_regions = _compute_dynamic_regions(all_data, "ilmd")
+    all_regions = {"ilad": ilad_regions, "ilmd": ilmd_regions}
+
+    for metric, regions in [("ilad", ilad_regions), ("ilmd", ilmd_regions)]:
         for region_name, (low, high) in regions.items():
             win_counts: dict[str, int] = {s: 0 for s in STRATEGIES}
 
@@ -51,14 +68,14 @@ def _compute_regional_winners(
                 for point in region_points:
                     strategy_ndcg[point["strategy"]].append(point["ndcg"])
 
-                # Find winner for this dataset
+                # Find winner for this dataset (using max nDCG - best achievable)
                 best_strategy = None
                 best_ndcg = -1.0
                 for strategy, ndcgs in strategy_ndcg.items():
                     if ndcgs:
-                        avg = sum(ndcgs) / len(ndcgs)
-                        if avg > best_ndcg:
-                            best_ndcg = avg
+                        max_ndcg = max(ndcgs)
+                        if max_ndcg > best_ndcg:
+                            best_ndcg = max_ndcg
                             best_strategy = strategy
 
                 if best_strategy:
@@ -66,7 +83,18 @@ def _compute_regional_winners(
 
             results[metric][region_name] = win_counts
 
-    return results
+    return results, all_regions
+
+
+def _find_best_or_tied(wins: dict[str, int]) -> str:
+    """Find best strategy or list ties (e.g., 'DPP/MSD')."""
+    if not wins:
+        return "-"
+    max_wins = max(wins.values())
+    if max_wins == 0:
+        return "-"
+    winners = [s.upper() for s, count in wins.items() if count == max_wins]
+    return "/".join(sorted(winners))
 
 
 def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metric: str = "ilad") -> None:
@@ -172,7 +200,9 @@ def generate_latency_plot(output_path: Path) -> None:
     plt.close()
 
 
-def _log_regional_analysis(regional: dict, num_datasets: int) -> None:
+def _log_regional_analysis(
+    regional: dict, ranges: dict[str, dict[str, tuple[float, float]]], num_datasets: int
+) -> None:
     """Log regional analysis tables."""
     logger.info(f"\nRegional Analysis (dataset wins out of {num_datasets} datasets):")
     logger.info("\nILAD (Average Diversity):")
@@ -181,12 +211,12 @@ def _log_regional_analysis(regional: dict, num_datasets: int) -> None:
     for region in ["low", "moderate", "high"]:
         if region in regional["ilad"]:
             wins = regional["ilad"][region]
-            low, high = ILAD_REGIONS[region]
-            best = max(wins.items(), key=lambda x: x[1])[0] if wins else "-"
+            low, high = ranges["ilad"][region]
+            best = _find_best_or_tied(wins)
             logger.info(
-                f"| {region:8} | {low:.1f}-{high:.1f}   | "
+                f"| {region:8} | {low:.2f}-{high:.2f} | "
                 f"{wins.get('mmr', 0):3d} | {wins.get('msd', 0):3d} | "
-                f"{wins.get('dpp', 0):3d} | {wins.get('ssd', 0):3d} | {best.upper():6} |"
+                f"{wins.get('dpp', 0):3d} | {wins.get('ssd', 0):3d} | {best:6} |"
             )
 
     logger.info("\nILMD (Minimum Diversity):")
@@ -195,13 +225,18 @@ def _log_regional_analysis(regional: dict, num_datasets: int) -> None:
     for region in ["low", "moderate", "high"]:
         if region in regional["ilmd"]:
             wins = regional["ilmd"][region]
-            low, high = ILMD_REGIONS[region]
-            best = max(wins.items(), key=lambda x: x[1])[0] if wins else "-"
+            low, high = ranges["ilmd"][region]
+            best = _find_best_or_tied(wins)
             logger.info(
                 f"| {region:8} | {low:.2f}-{high:.2f} | "
                 f"{wins.get('mmr', 0):3d} | {wins.get('msd', 0):3d} | "
-                f"{wins.get('dpp', 0):3d} | {wins.get('ssd', 0):3d} | {best.upper():6} |"
+                f"{wins.get('dpp', 0):3d} | {wins.get('ssd', 0):3d} | {best:6} |"
             )
+
+    # Log the computed ranges
+    logger.info("\nDynamic ranges computed from data:")
+    logger.info(f"  ILAD: {ranges['ilad']}")
+    logger.info(f"  ILMD: {ranges['ilmd']}")
 
     # Summary: total wins across all regions
     logger.info("\nTotal Wins Summary:")
@@ -260,8 +295,8 @@ def generate_report(results_dir: Path) -> None:
     logger.debug(f"Saved: {latency_path}")
 
     # Regional analysis - count wins per dataset
-    regional = _compute_regional_winners(all_data)
+    regional, ranges = _compute_regional_winners(all_data)
     num_datasets = len(set(p["dataset"] for p in all_data))
-    _log_regional_analysis(regional, num_datasets)
+    _log_regional_analysis(regional, ranges, num_datasets)
 
     logger.info(f"\nReport generated: {results_dir}")
