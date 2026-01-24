@@ -233,6 +233,9 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
 
     markers = {"mmr": "o", "msd": "s", "dpp": "^", "ssd": "D"}
 
+    # Get best operating points for each dataset
+    budgeted_scores = _compute_relevance_budgeted_scores(all_data)
+
     for ax, dataset in zip(axes, datasets):
         for strategy in strategies:
             strategy_points = [p for p in all_data if p["dataset"] == dataset and p["strategy"] == strategy]
@@ -250,6 +253,26 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
                     markersize=7,
                     linewidth=2.5,
                     alpha=0.8,
+                )
+
+        # Add stars for best operating points (best for this specific metric)
+        if dataset in budgeted_scores:
+            # Use max_ilad for ILAD plots, max_ilmd for ILMD plots
+            goal_key = "max_ilad" if diversity_metric == "ilad" else "max_ilmd"
+            best = budgeted_scores[dataset].get(goal_key)
+            if best:
+                x_star = best["ilad"] if diversity_metric == "ilad" else best["ilmd"]
+                y_star = best["ndcg"]
+                strategy = str(best["strategy"])
+                ax.scatter(
+                    [x_star],
+                    [y_star],
+                    marker="*",
+                    s=200,
+                    c=colors[strategy],
+                    edgecolors="black",
+                    linewidths=1,
+                    zorder=10,
                 )
 
         ax.set_xlabel(f"{metric_label} →", fontsize=10)

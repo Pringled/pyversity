@@ -64,13 +64,13 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 
 ![Relevance vs ILAD Tradeoff](results/pareto_ilad.png)
 
-*Higher ILAD = more overall variety in recommendations*
+*Higher ILAD = more overall variety in recommendations. ★ marks the best ILAD point across all strategies (≥95% baseline relevance).*
 
 ### ILMD (Minimum Diversity)
 
 ![Relevance vs ILMD Tradeoff](results/pareto_ilmd.png)
 
-*Higher ILMD = no very similar pairs (stricter diversity guarantee)*
+*Higher ILMD = no very similar pairs (stricter diversity guarantee). ★ marks the best ILMD point across all strategies (≥95% baseline relevance).*
 
 ## Latency
 
