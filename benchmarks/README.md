@@ -36,23 +36,23 @@ We report results at two relevance floors:
 
 #### Strict Floor (99% Relevance)
 
-| Strategy | Combined | ILAD | ILMD | Best For |
-|----------|:--------:|:----:|:----:|----------|
-| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | Overall balance, avoiding similar pairs |
-| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | Simple baseline |
-| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | Sequence-aware feeds |
-| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | Maximum variety (ILAD) |
+| Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
+|----------|:--------:|:----:|:----:|:-----------:|----------|
+| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | 0.7 | Overall balance, avoiding similar pairs |
+| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | 0.7 | Simple baseline |
+| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | 0.8 | Sequence-aware feeds |
+| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | 0.4 | Maximum variety (ILAD) |
 
 #### Default Floor (95% Relevance)
 
-| Strategy | Combined | ILAD | ILMD | Best For |
-|----------|:--------:|:----:|:----:|----------|
-| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | Overall balance, avoiding similar pairs |
-| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | Sequence-aware feeds |
-| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | Simple baseline |
-| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | Maximum variety (ILAD) |
+| Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
+|----------|:--------:|:----:|:----:|:-----------:|----------|
+| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | 0.9 | Overall balance, avoiding similar pairs |
+| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | 0.9 | Sequence-aware feeds |
+| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 | Simple baseline |
+| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 | Maximum variety (ILAD) |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement vs baseline (diversity=0).*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement vs baseline (diversity=0). `diversity` shows the typical parameter value to achieve these results.*
 
 **DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement—a substantial diversity boost for just 5% relevance cost.
 
