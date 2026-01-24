@@ -26,28 +26,43 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains **≥95% of baseline relevance** (see [Methodology](#methodology) for details).
+We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains a minimum percentage of baseline relevance (see [Methodology](#methodology) for details).
 
 ### Overall Results
 
-| Strategy | Combined Score | ILAD | ILMD |
-|----------|:--------------:|:----:|:----:|
-| **DPP**  | **0.439**      | 0.75 | **0.26** |
-| SSD      | 0.236          | 0.62 | 0.17 |
-| MSD      | 0.226          | **0.78** | 0.15 |
-| MMR      | 0.213          | 0.58 | 0.18 |
+We report results at two relevance floors:
+- **Strict (99%)**: Near-zero relevance loss, production-safe
+- **Default (95%)**: Balanced tradeoff with more diversity headroom
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains relative to baseline (higher = better). ILAD/ILMD = values at best operating point, averaged across datasets while maintaining ≥95% baseline relevance.*
+#### Strict Floor (99% Relevance)
 
-**DPP wins overall** by balancing both ILAD (variety) and ILMD (no duplicates). MSD achieves highest ILAD but at the cost of ILMD.
+| Strategy | Combined | ILAD | ILMD | Best For |
+|----------|:--------:|:----:|:----:|----------|
+| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | Overall balance, avoiding similar pairs |
+| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | Simple baseline |
+| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | Sequence-aware feeds |
+| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | Maximum variety (ILAD) |
+
+#### Default Floor (95% Relevance)
+
+| Strategy | Combined | ILAD | ILMD | Best For |
+|----------|:--------:|:----:|:----:|----------|
+| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | Overall balance, avoiding similar pairs |
+| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | Sequence-aware feeds |
+| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | Simple baseline |
+| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | Maximum variety (ILAD) |
+
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement vs baseline (diversity=0).*
+
+**DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement—a substantial diversity boost for just 5% relevance cost.
 
 ### Recommendations
 
 | Goal | Strategy | `diversity` | Notes |
 |------|----------|:-----------:|-------|
 | **Best overall balance** | **DPP** | 0.8-0.9 | Wins both overall and ILMD |
-| **Maximum diversity** | **MSD** | 0.5-0.6 | Best ILAD while keeping relevance |
-| **Avoid similar pairs** | **DPP** | 0.8-0.9 | Best at preventing near-duplicates |
+| **Maximum diversity** | **MSD** | 0.4-0.5 (99%) / 0.5-0.6 (95%) | Best ILAD while keeping relevance |
+| **Avoid similar pairs** | **DPP** | 0.7-0.9 | Best worst-case diversity (highest ILMD) |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
 | **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
 
@@ -70,7 +85,7 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 
 ![Relevance vs ILMD Tradeoff](results/pareto_ilmd.png)
 
-*Higher ILMD = no very similar pairs (stricter diversity guarantee). ★ marks the best ILMD point across all strategies (≥95% baseline relevance).*
+*Higher ILMD = better worst-case diversity (fewer similar pairs). ★ marks the best ILMD point across all strategies (≥95% baseline relevance).*
 
 ## Latency
 
@@ -109,19 +124,31 @@ python -m benchmarks report
 ## Detailed Results
 
 <details>
-<summary>Per-Dataset Best Configs (≥95% baseline nDCG)</summary>
+<summary>Per-Dataset Best Configs (≥99% baseline nDCG - Strict)</summary>
+
+| Dataset | Max ILAD | Max ILMD | Best Overall |
+|---------|:--------:|:--------:|:------------:|
+| MovieLens-32M | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
+| Last.FM | DPP (`diversity`=0.7) | DPP (`diversity`=0.7) | DPP (`diversity`=0.7) |
+| Amazon-VG | MSD (`diversity`=0.4) | MMR (`diversity`=0.7) | MMR (`diversity`=0.7) |
+| Goodreads | MSD (`diversity`=0.4) | DPP (`diversity`=0.7) | DPP (`diversity`=0.7) |
+
+</details>
+
+<details>
+<summary>Per-Dataset Best Configs (≥95% baseline nDCG - Default)</summary>
 
 | Dataset | Max ILAD | Max ILMD | Best Overall |
 |---------|:--------:|:--------:|:------------:|
 | MovieLens-32M | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
 | Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
-| Amazon-VG | MSD (`diversity`=0.5) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
+| Amazon-VG | MSD (`diversity`=0.5) | MMR (`diversity`=0.7) | MSD (`diversity`=0.5) |
 | Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 
 </details>
 
 <details>
-<summary>Per-Dataset Detailed Metrics</summary>
+<summary>Per-Dataset Detailed Metrics (95% floor)</summary>
 
 The tables below show best achievable metrics per strategy while maintaining ≥95% of baseline nDCG.
 
@@ -129,37 +156,37 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 
 | Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
 |----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.9              | 0.052 | 0.67 | 0.25 | **0.46** |
-| SSD      | 0.8              | 0.054 | 0.58 | 0.18 | 0.32     |
-| MSD      | 0.5              | 0.055 | 0.64 | 0.10 | 0.25     |
-| MMR      | 0.7              | 0.056 | 0.54 | 0.14 | 0.27     |
+| **DPP**  | 0.9              | 0.052 | 0.67 | 0.31 | **0.46** |
+| SSD      | 0.9              | 0.053 | 0.60 | 0.22 | 0.32     |
+| MSD      | 0.6              | 0.055 | 0.67 | 0.13 | 0.25     |
+| MMR      | 0.8              | 0.055 | 0.56 | 0.17 | 0.27     |
 
 #### Last.FM
 
 | Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
 |----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.8              | 0.151 | 0.73 | 0.19 | **0.37** |
-| SSD      | 0.9              | 0.152 | 0.55 | 0.12 | 0.18     |
-| MSD      | 0.6              | 0.154 | 0.84 | 0.10 | 0.22     |
-| MMR      | 0.8              | 0.155 | 0.57 | 0.15 | 0.19     |
+| **DPP**  | 0.8              | 0.151 | 0.61 | 0.22 | **0.37** |
+| SSD      | 0.9              | 0.152 | 0.52 | 0.14 | 0.18     |
+| MSD      | 0.6              | 0.154 | 0.63 | 0.13 | 0.22     |
+| MMR      | 0.8              | 0.153 | 0.52 | 0.16 | 0.19     |
 
 #### Amazon Video Games
 
 | Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
 |----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.9              | 0.306 | 0.92 | 0.47 | **0.68** |
-| SSD      | 0.8              | 0.298 | 0.85 | 0.31 | 0.38     |
-| MSD      | 0.5              | 0.269 | 0.96 | 0.37 | 0.32     |
-| MMR      | 0.8              | 0.285 | 0.72 | 0.31 | 0.27     |
+| **MSD**  | 0.5              | 0.269 | 0.95 | 0.48 | **0.50** |
+| DPP      | 0.9              | 0.279 | 0.89 | 0.52 | 0.48     |
+| SSD      | 0.9              | 0.271 | 0.81 | 0.35 | 0.38     |
+| MMR      | 0.7              | 0.289 | 0.88 | 0.53 | 0.27     |
 
 #### Goodreads
 
 | Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
 |----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.8              | 0.027 | 0.67 | 0.14 | **0.24** |
-| SSD      | 0.9              | 0.026 | 0.50 | 0.08 | 0.10     |
-| MSD      | 0.5              | 0.027 | 0.78 | 0.08 | 0.13     |
-| MMR      | 0.7              | 0.028 | 0.50 | 0.10 | 0.12     |
+| **DPP**  | 0.8              | 0.027 | 0.60 | 0.17 | **0.24** |
+| SSD      | 0.9              | 0.026 | 0.47 | 0.10 | 0.10     |
+| MSD      | 0.5              | 0.027 | 0.67 | 0.11 | 0.13     |
+| MMR      | 0.7              | 0.028 | 0.44 | 0.11 | 0.12     |
 
 </details>
 
@@ -179,7 +206,7 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
-- **Selection**: k=20 items selected by each strategy
+- **Selection**: k=10 items selected by each strategy
 - **diversity sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
 ### Relevance-Budgeted Evaluation
@@ -187,11 +214,15 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 We use a **relevance floor** approach to ensure fair comparison:
 
 1. **Baseline**: For each dataset, compute baseline nDCG at `diversity=0` (no diversification)
-2. **Filter**: Keep only configs where nDCG ≥ 95% of baseline to ensure relevance
+2. **Filter**: Keep only configs where nDCG meets the relevance floor
 3. **Compare**: Among feasible configs, find which strategy achieves:
    - **Max ILAD**: Best overall diversity spread
-   - **Max ILMD**: Best worst-case diversity (no similar pairs)
+   - **Max ILMD**: Best worst-case diversity (fewer similar pairs)
    - **Best Combined**: Geometric mean of normalized ILAD and ILMD gains
+
+We report results at two relevance floors:
+- **Strict (99%)**: Near-zero relevance loss, production-safe
+- **Default (95%)**: Balanced tradeoff with more diversity headroom
 
 The **Combined Score** normalizes gains relative to baseline (λ=0):
 - `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_max - ILAD_baseline)`
@@ -205,7 +236,7 @@ This ensures a strategy must improve *both* metrics to score well—high only if
 | Metric | Type | Description |
 |--------|------|-------------|
 | **ILAD** | Average | Mean pairwise distance—measures overall variety |
-| **ILMD** | Minimum | Min pairwise distance—best at preventing near-duplicates |
+| **ILMD** | Minimum | Min pairwise distance—higher = fewer similar pairs |
 
 Both are computed as `1 - cosine_similarity` between item embeddings.
 

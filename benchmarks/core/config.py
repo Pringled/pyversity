@@ -23,7 +23,7 @@ class BenchmarkConfig:
     max_candidates: int = 1000
 
     # Evaluation
-    k: int = 20
+    k: int = 10
     sample_users: int = 2000
 
     # Strategies
