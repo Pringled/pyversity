@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from datasets import load_dataset as hf_load_dataset
 from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
@@ -148,8 +149,6 @@ def _load_lastfm(path: Path) -> pd.DataFrame:
 
 def _load_huggingface(dataset_id: str) -> pd.DataFrame:
     """Load a dataset from HuggingFace Hub."""
-    from datasets import load_dataset as hf_load_dataset
-
     logger.debug(f"Loading from HuggingFace: {dataset_id}")
     ds = hf_load_dataset(dataset_id, split="train")
     df = ds.to_pandas()

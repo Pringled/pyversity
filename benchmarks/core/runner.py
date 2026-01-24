@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
 
 import numpy as np
@@ -140,9 +141,7 @@ def _evaluate_user(
 
 def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dict]:
     """Aggregate per-user results by strategy/diversity into mean and std."""
-    from collections import defaultdict
-
-    groups = defaultdict(list)
+    groups: dict[tuple[str, float], list[dict]] = defaultdict(list)
     for r in results:
         key = (r["strategy"], r["diversity"])
         groups[key].append(r)

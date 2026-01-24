@@ -11,6 +11,7 @@ from tqdm import tqdm
 from benchmarks.core import (
     DATASET_REGISTRY,
     BenchmarkConfig,
+    generate_latency_plot,
     generate_report,
     run_benchmark,
 )
@@ -106,8 +107,6 @@ def cmd_report() -> None:
 
 def cmd_latency() -> None:
     """Run latency benchmark and generate plot."""
-    from benchmarks.core.report import generate_latency_plot
-
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     generate_latency_plot(RESULTS_DIR / "latency.png")
 

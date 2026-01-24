@@ -7,6 +7,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from benchmarks.core.latency import run_latency_benchmark
+
 logger = logging.getLogger(__name__)
 
 # Set up seaborn styling
@@ -296,8 +298,6 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
 
 def generate_latency_plot(output_path: Path) -> None:
     """Generate latency scaling plot using synthetic benchmark."""
-    from benchmarks.core.latency import run_latency_benchmark
-
     logger.info("Running synthetic latency benchmark...")
     results = run_latency_benchmark()
 
@@ -322,6 +322,7 @@ def generate_latency_plot(output_path: Path) -> None:
             label=strategy.upper(),
             markersize=8,
             linewidth=2.5,
+            alpha=0.8,
         )
 
     ax.set_xlabel("Number of Candidates (n)", fontsize=11)
