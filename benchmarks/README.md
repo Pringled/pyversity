@@ -79,13 +79,13 @@ We report results at two relevance floors:
 
 ![Relevance vs ILAD Tradeoff](results/pareto_ilad.png)
 
-*Higher ILAD = more overall variety in recommendations. ★ marks the best ILAD point across all strategies (≥95% baseline relevance).*
+*Higher ILAD = more overall variety in recommendations. ★ = best at 95% floor, ◆ = best at 99% floor.*
 
 ### ILMD (Minimum Diversity)
 
 ![Relevance vs ILMD Tradeoff](results/pareto_ilmd.png)
 
-*Higher ILMD = better worst-case diversity (fewer similar pairs). ★ marks the best ILMD point across all strategies (≥95% baseline relevance).*
+*Higher ILMD = better worst-case diversity (fewer similar pairs). ★ = best at 95% floor, ◆ = best at 99% floor.*
 
 ## Latency
 

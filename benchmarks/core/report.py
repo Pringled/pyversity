@@ -254,7 +254,8 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
     markers = {"mmr": "o", "msd": "s", "dpp": "^", "ssd": "D"}
 
     # Get best operating points for each dataset (use default 95% floor)
-    budgeted_scores = _compute_relevance_budgeted_scores(all_data, relevance_floor=0.95)
+    budgeted_scores_95 = _compute_relevance_budgeted_scores(all_data, relevance_floor=0.95)
+    budgeted_scores_99 = _compute_relevance_budgeted_scores(all_data, relevance_floor=0.99)
 
     for ax, dataset in zip(axes, datasets):
         for strategy in strategies:
@@ -275,11 +276,12 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
                     alpha=0.8,
                 )
 
-        # Add stars for best operating points (best for this specific metric)
-        if dataset in budgeted_scores:
-            # Use max_ilad for ILAD plots, max_ilmd for ILMD plots
-            goal_key = "max_ilad" if diversity_metric == "ilad" else "max_ilmd"
-            best = budgeted_scores[dataset].get(goal_key)
+        # Add stars for best operating points at both floors
+        goal_key = "max_ilad" if diversity_metric == "ilad" else "max_ilmd"
+
+        # Filled star for 95% floor
+        if dataset in budgeted_scores_95:
+            best = budgeted_scores_95[dataset].get(goal_key)
             if best:
                 x_star = best["ilad"] if diversity_metric == "ilad" else best["ilmd"]
                 y_star = best["ndcg"]
@@ -289,6 +291,24 @@ def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metr
                     [y_star],
                     marker="*",
                     s=200,
+                    c=colors[strategy],
+                    edgecolors="black",
+                    linewidths=1,
+                    zorder=10,
+                )
+
+        # Diamond for 99% floor
+        if dataset in budgeted_scores_99:
+            best = budgeted_scores_99[dataset].get(goal_key)
+            if best:
+                x_diamond = best["ilad"] if diversity_metric == "ilad" else best["ilmd"]
+                y_diamond = best["ndcg"]
+                strategy = str(best["strategy"])
+                ax.scatter(
+                    [x_diamond],
+                    [y_diamond],
+                    marker="D",
+                    s=100,
                     c=colors[strategy],
                     edgecolors="black",
                     linewidths=1,
