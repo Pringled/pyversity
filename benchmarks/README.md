@@ -52,7 +52,7 @@ We report results at two relevance floors:
 | MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 |
 | MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement vs baseline (diversity=0). `diversity` shows the typical parameter value to achieve these results.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement over baseline (diversity=0). `diversity` shows the parameter value to achieve these results.*
 
 **DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement—a substantial diversity boost for just 5% relevance cost.
 
@@ -60,9 +60,9 @@ We report results at two relevance floors:
 
 | Goal | Strategy | `diversity` | Notes |
 |------|----------|:-----------:|-------|
-| **Best overall balance** | **DPP** | 0.8-0.9 | Wins both overall and ILMD |
-| **Maximum diversity** | **MSD** | 0.4-0.5 (99%) / 0.5-0.6 (95%) | Best ILAD while keeping relevance |
-| **Avoid similar pairs** | **DPP** | 0.7-0.9 | Best worst-case diversity (highest ILMD) |
+| **Best overall balance** | **DPP** | 0.7-0.9 | Wins both overall and ILMD |
+| **Maximum variety (ILAD)** | **MSD** | 0.4-0.5 | Best ILAD while keeping relevance |
+| **Avoid similar pairs (ILMD)** | **DPP** | 0.7-0.9 | Best worst-case diversity |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
 | **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
 
