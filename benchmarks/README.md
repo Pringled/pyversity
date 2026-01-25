@@ -13,8 +13,15 @@ In addition, we measure latency of each strategy as the number of candidates sca
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
 > collaborative filtering datasets.
 
+## TL;DR
+
+**Use DPP with `diversity=0.7-0.9`** for best overall diversity gains with minimal relevance loss.
+- At 99% relevance floor: +51% ILAD, +104% ILMD improvement
+- At 95% relevance floor: +79% ILAD, +178% ILMD improvement
+
 ## Table of Contents
 
+- [TL;DR](#tldr)
 - [Key Findings](#key-findings)
 - [Relevance-Diversity Tradeoff](#relevance-diversity-tradeoff)
 - [Latency](#latency)
@@ -25,6 +32,8 @@ In addition, we measure latency of each strategy as the number of candidates sca
 - [Citations](#citations)
 
 ## Key Findings
+
+We measure two diversity metrics: **ILAD** (average pairwise diversity—higher = more variety) and **ILMD** (minimum pairwise diversity—higher = fewer similar pairs).
 
 We use a **relevance-budgeted** approach: for each strategy, we find the best config that maintains a minimum percentage of baseline relevance (see [Methodology](#methodology) for details).
 
@@ -52,9 +61,9 @@ We report results at two relevance floors:
 | MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 |
 | MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement over baseline (diversity=0). `diversity` shows the parameter value to achieve these results.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (0-1 scale, higher = better). A score of 0.39 means ~39% of maximum possible balanced diversity improvement. Percentages show improvement over baseline (`diversity=0`). `diversity` shows the parameter value to achieve these results.*
 
-**DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement—a substantial diversity boost for just 5% relevance cost.
+**DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement, a substantial diversity boost for at most 5% relevance cost.
 
 ### Recommendations
 
@@ -62,7 +71,7 @@ We report results at two relevance floors:
 |------|----------|:-----------:|-------|
 | **Best overall balance** | **DPP** | 0.7-0.9 | Wins both overall and ILMD |
 | **Maximum variety (ILAD)** | **MSD** | 0.4-0.5 | Best ILAD while keeping relevance |
-| **Avoid similar pairs (ILMD)** | **DPP** | 0.7-0.9 | Best worst-case diversity |
+| **Avoid similar pairs (ILMD)** | **DPP** | 0.7-0.9 | Best worst-case diversity (fewest near-duplicates) |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
 | **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
 
@@ -70,8 +79,8 @@ We report results at two relevance floors:
 
 > **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
 > **sequence-aware** diversification with `recent_embeddings`—it rewards novelty relative to
-> recently shown items. For content feeds, infinite scroll, or conversational RAG where you
-> maintain a sliding window of recent items, SSD may outperform these results.
+> recently shown items. In content feeds with sliding windows, SSD's novelty-relative-to-recent
+> approach should yield larger effective diversity gains than shown here.
 
 ## Relevance-Diversity Tradeoff
 
@@ -79,17 +88,17 @@ We report results at two relevance floors:
 
 ![Relevance vs ILAD Tradeoff](results/pareto_ilad.png)
 
-*Higher ILAD = more overall variety in recommendations. ★ = best at 95% floor, ◆ = best at 99% floor.*
+*Higher ILAD = more overall variety in recommendations. ★ = best operating point at 95% floor, ◆ = best at 99% floor.*
 
 ### ILMD (Minimum Diversity)
 
 ![Relevance vs ILMD Tradeoff](results/pareto_ilmd.png)
 
-*Higher ILMD = better worst-case diversity (fewer similar pairs). ★ = best at 95% floor, ◆ = best at 99% floor.*
+*Higher ILMD = better worst-case diversity (fewer similar pairs). ★ = best operating point at 95% floor, ◆ = best at 99% floor.*
 
 ## Latency
 
-All strategies are extremely fast in practice. The plot below shows latency scaling with the number of candidates (k=10, d=256):
+All strategies are extremely fast in practice—even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling with the number of candidates (k=10, d=256):
 
 ![Latency vs Candidates](results/latency.png)
 
@@ -126,7 +135,7 @@ python -m benchmarks report
 <details>
 <summary>Per-Dataset Best Configs (99% Relevance Floor)</summary>
 
-| Dataset | Max ILAD | Max ILMD | Best Overall |
+| Dataset | Max ILAD | Max ILMD | Best Combined |
 |---------|:--------:|:--------:|:------------:|
 | MovieLens-32M | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 | Last.FM | DPP (`diversity`=0.7) | DPP (`diversity`=0.7) | DPP (`diversity`=0.7) |
@@ -138,7 +147,7 @@ python -m benchmarks report
 <details>
 <summary>Per-Dataset Best Configs (95% Relevance Floor)</summary>
 
-| Dataset | Max ILAD | Max ILMD | Best Overall |
+| Dataset | Max ILAD | Max ILMD | Best Combined |
 |---------|:--------:|:--------:|:------------:|
 | MovieLens-32M | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) | DPP (`diversity`=0.9) |
 | Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
@@ -244,7 +253,7 @@ Shows how each strategy's metrics change as you increase `diversity`, averaged a
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=10 items selected by each strategy
-- **diversity sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
+- **`diversity` sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
 ### Relevance-Budgeted Evaluation
 
@@ -261,7 +270,7 @@ We report results at two relevance floors:
 - **99%**: Near-zero relevance loss, production-safe
 - **95%**: Balanced tradeoff with more diversity headroom
 
-The **Combined Score** normalizes gains relative to baseline (λ=0):
+The **Combined Score** normalizes gains relative to baseline (`diversity=0`):
 - `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_max - ILAD_baseline)`
 - `ILMD_gain = (ILMD - ILMD_baseline) / (ILMD_max - ILMD_baseline)`
 - `Combined = sqrt(ILAD_gain × ILMD_gain)`
