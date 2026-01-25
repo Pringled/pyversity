@@ -18,6 +18,7 @@
 
 [Quickstart](#quickstart) •
 [Supported Strategies](#supported-strategies) •
+[Benchmarks](#benchmarks) •
 [Motivation](#motivation) •
 [Examples](#examples) •
 [References](#references)
@@ -75,6 +76,28 @@ The following table describes the supported strategies, how they work, their tim
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
 | **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll, e.g. social/news/product feeds where users consume sequentially, as well as conversational RAG to avoid showing similar chunks within the recent window.
+
+## Benchmarks
+
+We evaluated all strategies across 4 recommendation datasets (MovieLens-32M, Amazon Video Games, Goodreads, Last.FM). Full methodology and detailed results are in [`benchmarks/`](benchmarks/).
+
+**TL;DR: Use DPP with `diversity=0.7-0.9`** for best overall diversity gains with minimal relevance loss.
+
+| Relevance Floor | ILAD Improvement | ILMD Improvement |
+|-----------------|:----------------:|:----------------:|
+| 99% (strict)    | +51%             | +104%            |
+| 95% (balanced)  | +79%             | +178%            |
+
+**Quick recommendations:**
+
+| Use Case | Strategy | `diversity` |
+|----------|----------|:-----------:|
+| Best overall balance | **DPP** | 0.7–0.9 |
+| Maximum variety (ILAD) | MSD | 0.4–0.6 |
+| Fewer similar pairs (ILMD) | DPP | 0.7–0.9 |
+| Sequence-aware (feeds, RAG) | SSD | 0.7–0.9 |
+
+→ See [full benchmark results](benchmarks/) for per-dataset tables and Pareto plots.
 
 
 ## Motivation

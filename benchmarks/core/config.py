@@ -37,6 +37,7 @@ class BenchmarkConfig:
 
     # Reproducibility
     seed: int = 42
+    n_runs: int = 1  # Number of runs with different seeds for robustness
 
     def __post_init__(self) -> None:
         """Post-initialization processing."""

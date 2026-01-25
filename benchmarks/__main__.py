@@ -78,16 +78,35 @@ def cmd_download() -> None:
     logger.info("Download complete")
 
 
-def cmd_run() -> None:
+def cmd_run(n_runs: int = 5, overwrite: bool = False) -> None:
     """Run benchmarks on all datasets."""
-    logger.info("Running benchmark suite...")
+    logger.info(f"Running benchmark suite ({n_runs} runs per dataset for robustness)...")
 
     for name, info in DATASET_REGISTRY.items():
         logger.info(f"Benchmarking {name}...")
 
+        # Check if we should skip/resume
+        output_path = RESULTS_DIR / f"{name}.json"
+        if output_path.exists() and not overwrite:
+            import json
+
+            with open(output_path) as f:
+                existing = json.load(f)
+            existing_runs = len(existing.get("per_run_results", {}))
+            if existing_runs >= n_runs:
+                logger.info(f"Skipping {name}: already has {existing_runs} runs (use --overwrite for fresh)")
+                continue
+            elif existing_runs > 0:
+                logger.info(f"Resuming {name}: {existing_runs}/{n_runs} runs completed")
+
+        if overwrite and output_path.exists():
+            output_path.unlink()
+            logger.info(f"Removed existing results for {name}")
+
         config = BenchmarkConfig(
             dataset=name,
             rating_threshold=info.rating_threshold,
+            n_runs=n_runs,
         )
 
         try:
@@ -125,20 +144,31 @@ def main() -> None:
         default=None,
         help="Command to run (default: run)",
     )
+    parser.add_argument(
+        "--n-runs",
+        type=int,
+        default=5,
+        help="Number of runs per dataset for statistical robustness (default: 5)",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing results instead of resuming",
+    )
 
     args = parser.parse_args()
 
     if args.command == "download":
         cmd_download()
     elif args.command == "run":
-        cmd_run()
+        cmd_run(n_runs=args.n_runs, overwrite=args.overwrite)
     elif args.command == "report":
         cmd_report()
     elif args.command == "latency":
         cmd_latency()
     else:
         # Default: run
-        cmd_run()
+        cmd_run(n_runs=args.n_runs, overwrite=args.overwrite)
 
 
 if __name__ == "__main__":

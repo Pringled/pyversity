@@ -13,15 +13,7 @@ In addition, we measure latency of each strategy as the number of candidates sca
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
 > collaborative filtering datasets.
 
-## TL;DR
-
-**Use DPP with `diversity=0.7-0.9`** for best overall diversity gains with minimal relevance loss.
-- At 99% relevance floor: +51% ILAD, +104% ILMD improvement
-- At 95% relevance floor: +79% ILAD, +178% ILMD improvement
-
 ## Table of Contents
-
-- [TL;DR](#tldr)
 - [Key Findings](#key-findings)
 - [Relevance-Diversity Tradeoff](#relevance-diversity-tradeoff)
 - [Latency](#latency)
@@ -47,33 +39,33 @@ We report results at two relevance floors:
 
 | Strategy | Combined | ILAD | ILMD | `diversity` |
 |----------|:--------:|:----:|:----:|:-----------:|
-| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | 0.7 |
-| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | 0.7 |
-| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | 0.8 |
-| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | 0.4 |
+| **DPP**  | **0.274** | 0.60 (+43%) | **0.25 (+108%)** | 0.8 |
+| SSD      | 0.195    | 0.55 (+31%) | 0.21 (+75%)      | 0.8 |
+| MMR      | 0.189    | 0.53 (+26%) | 0.22 (+83%)      | 0.7 |
+| MSD      | 0.117    | **0.57 (+36%)** | 0.16 (+33%)  | 0.3 |
 
 #### 95% Relevance Floor
 
 | Strategy | Combined | ILAD | ILMD | `diversity` |
 |----------|:--------:|:----:|:----:|:-----------:|
-| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | 0.9 |
-| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | 0.9 |
-| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 |
-| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 |
+| **MMR**  | **0.298** | 0.61 (+45%) | **0.27 (+125%)** | 0.8 |
+| **DPP**  | 0.297    | 0.63 (+50%) | 0.26 (+117%)     | 0.8 |
+| SSD      | 0.254    | 0.60 (+43%) | 0.23 (+92%)      | 0.9 |
+| MSD      | 0.174    | **0.63 (+50%)** | 0.18 (+50%)  | 0.5 |
 
-*Combined Score = geometric mean of normalized ILAD and ILMD gains (0-1 scale, higher = better). A score of 0.39 means ~39% of maximum possible balanced diversity improvement. Percentages show improvement over baseline (`diversity=0`). `diversity` shows the parameter value to achieve these results.*
+*Combined Score = geometric mean of normalized ILAD and ILMD gains (0-1 scale, higher = better). A score of 0.30 means ~30% of maximum possible balanced diversity improvement. Percentages show improvement over baseline (`diversity=0`). `diversity` shows the parameter value to achieve these results. Results averaged across 10 independent runs with different random seeds (std < 0.01 for all metrics).*
 
-**DPP wins at both thresholds** by balancing both ILAD (variety) and ILMD (worst-case diversity). At 95% floor, DPP achieves +79% ILAD and +178% ILMD improvement, a substantial diversity boost for at most 5% relevance cost.
+**DPP leads at 99% floor** with the best balanced diversity (0.274 vs next-best 0.195). At 95% floor, **MMR and DPP are essentially tied** (0.298 vs 0.297), with MMR having a slight edge on ILMD and DPP on ILAD.
 
 ### Recommendations
 
 | Goal | Strategy | `diversity` | Notes |
 |------|----------|:-----------:|-------|
-| **Best overall balance** | **DPP** | 0.7-0.9 | Wins both overall and ILMD |
+| **Best overall balance** | **DPP** or **MMR** | 0.7-0.8 | Essentially tied at 95% floor; DPP leads at 99% |
 | **Maximum variety (ILAD)** | **MSD** | 0.4-0.5 | Best ILAD while keeping relevance |
-| **Avoid similar pairs (ILMD)** | **DPP** | 0.7-0.9 | Best worst-case diversity (fewest near-duplicates) |
+| **Minimize similar pairs (ILMD)** | **DPP** or **MMR** | 0.7-0.8 | Both strong; DPP wins at strict floor |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
-| **Simple baseline** | **MMR** | 0.7-0.8 | Easy to implement, competitive |
+| **Simple implementation** | **MMR** | 0.7-0.8 | Easiest to implement, competitive results |
 
 *`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
@@ -250,6 +242,7 @@ Shows how each strategy's metrics change as you increase `diversity`, averaged a
 ### Experimental Setup
 
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
+- **Runs**: 10 runs per dataset with different random seeds for robust results (20,000 total evaluations)
 - **Embeddings**: 64-dim SVD on item co-occurrence matrix
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=10 items selected by each strategy

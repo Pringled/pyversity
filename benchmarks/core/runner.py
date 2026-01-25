@@ -4,6 +4,7 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pyversity
@@ -24,9 +25,20 @@ def run_benchmark(config: BenchmarkConfig) -> dict:
         msg = "config.dataset must be specified"
         raise ValueError(msg)
 
-    rng = np.random.default_rng(config.seed)
+    dataset_name = config.dataset if isinstance(config.dataset, str) else config.dataset.name
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = config.output_dir / f"{dataset_name}.json"
 
-    # Load and prepare data
+    # Load existing results if resuming
+    existing_runs: dict[int, list[dict]] = {}
+    if output_path.exists():
+        with open(output_path) as f:
+            existing = json.load(f)
+        if "per_run_results" in existing:
+            existing_runs = {int(k): v for k, v in existing["per_run_results"].items()}
+            logger.info(f"Resuming: found {len(existing_runs)} existing runs")
+
+    # Load and prepare data (once, shared across runs)
     logger.debug("[1/4] Loading dataset...")
     data = load_dataset(config.dataset, config.min_interactions, config.rating_threshold)
 
@@ -37,23 +49,40 @@ def run_benchmark(config: BenchmarkConfig) -> dict:
     similarity = compute_similarity_matrix(embeddings, top_k=100)
     logger.debug(f"Similarity matrix: {similarity.shape}, nnz={similarity.nnz:,}")
 
-    # Sample users
-    user_counts = np.bincount(data.user_ids, minlength=data.n_users)
-    eligible = np.where(user_counts >= 2)[0]
-    sampled = rng.choice(eligible, min(len(eligible), config.sample_users), replace=False)
-    logger.debug(f"[4/4] Evaluating {len(sampled)} users...")
+    # Run multiple times with different seeds for robustness
+    per_run_results: dict[int, list[dict]] = existing_runs.copy()
 
-    # Run evaluation
-    all_results = []
-    for user_id in tqdm(sampled, desc="Users"):
-        user_results = _evaluate_user(user_id, data, embeddings, similarity, config, rng)
-        all_results.extend(user_results)
+    for run_idx in range(config.n_runs):
+        # Skip if already completed
+        if run_idx in per_run_results:
+            logger.info(f"Skipping run {run_idx + 1}/{config.n_runs} (already completed)")
+            continue
 
-    # Aggregate results
-    aggregated = _aggregate_results(all_results, config)
+        run_seed = config.seed + run_idx
+        rng = np.random.default_rng(run_seed)
 
-    # Build output
-    dataset_name = config.dataset if isinstance(config.dataset, str) else config.dataset.name
+        # Sample users (different sample per run)
+        user_counts = np.bincount(data.user_ids, minlength=data.n_users)
+        eligible = np.where(user_counts >= 2)[0]
+        sampled = rng.choice(eligible, min(len(eligible), config.sample_users), replace=False)
+
+        run_desc = f"Run {run_idx + 1}/{config.n_runs}" if config.n_runs > 1 else "Users"
+        logger.debug(f"[4/4] {run_desc}: Evaluating {len(sampled)} users...")
+
+        # Run evaluation for this run
+        run_results = []
+        for user_id in tqdm(sampled, desc=run_desc):
+            user_results = _evaluate_user(user_id, data, embeddings, similarity, config, rng)
+            run_results.extend(user_results)
+
+        # Save this run immediately (for resumability)
+        per_run_results[run_idx] = _aggregate_single_run(run_results)
+        _save_intermediate(output_path, dataset_name, data, config, per_run_results)
+
+    # Aggregate results across all runs
+    aggregated = _aggregate_across_runs(per_run_results)
+
+    # Build final output
     output = {
         "dataset": dataset_name,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -61,17 +90,18 @@ def run_benchmark(config: BenchmarkConfig) -> dict:
             "n_users": data.n_users,
             "n_items": data.n_items,
             "n_interactions": len(data.user_ids),
-            "sample_users": len(sampled),
+            "sample_users": config.sample_users,
+            "n_runs": config.n_runs,
+            "total_evaluations": config.sample_users * config.n_runs,
             "k": config.k,
             "embedding_dim": config.embedding_dim,
             "seed": config.seed,
         },
+        "per_run_results": {str(k): v for k, v in per_run_results.items()},
         "results": aggregated,
     }
 
-    # Save
-    config.output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = config.output_dir / f"{dataset_name}.json"
+    # Save final results
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
     logger.debug(f"Saved results to: {output_path}")
@@ -80,6 +110,31 @@ def run_benchmark(config: BenchmarkConfig) -> dict:
     _print_summary(aggregated)
 
     return output
+
+
+def _save_intermediate(
+    output_path: Path, dataset_name: str, data: InteractionData, config: BenchmarkConfig, per_run_results: dict
+) -> None:
+    """Save intermediate results after each run for resumability."""
+    intermediate = {
+        "dataset": dataset_name,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "config": {
+            "n_users": data.n_users,
+            "n_items": data.n_items,
+            "n_interactions": len(data.user_ids),
+            "sample_users": config.sample_users,
+            "n_runs": config.n_runs,
+            "k": config.k,
+            "embedding_dim": config.embedding_dim,
+            "seed": config.seed,
+        },
+        "per_run_results": {str(k): v for k, v in per_run_results.items()},
+        "results": _aggregate_across_runs(per_run_results),
+    }
+    with open(output_path, "w") as f:
+        json.dump(intermediate, f, indent=2)
+    logger.debug(f"Saved intermediate results ({len(per_run_results)} runs completed)")
 
 
 def _evaluate_user(
@@ -139,8 +194,8 @@ def _evaluate_user(
     return results
 
 
-def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dict]:
-    """Aggregate per-user results by strategy/diversity into mean and std."""
+def _aggregate_single_run(results: list[dict]) -> list[dict]:
+    """Aggregate per-user results from a single run into means."""
     groups: dict[tuple[str, float], list[dict]] = defaultdict(list)
     for r in results:
         key = (r["strategy"], r["diversity"])
@@ -151,6 +206,31 @@ def _aggregate_results(results: list[dict], config: BenchmarkConfig) -> list[dic
         agg = {"strategy": strategy, "diversity": diversity}
         for metric in ["mrr", "ndcg@10", "ilad", "ilmd"]:
             values = [r[metric] for r in group]
+            agg[metric] = float(np.mean(values))
+        aggregated.append(agg)
+
+    return aggregated
+
+
+def _aggregate_across_runs(per_run_results: dict[int, list[dict]]) -> list[dict]:
+    """Aggregate results across multiple runs, computing mean and std."""
+    if not per_run_results:
+        return []
+
+    # Group by (strategy, diversity) across runs
+    groups: dict[tuple[str, float], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+
+    for run_results in per_run_results.values():
+        for row in run_results:
+            key = (row["strategy"], row["diversity"])
+            for metric in ["mrr", "ndcg@10", "ilad", "ilmd"]:
+                groups[key][metric].append(row[metric])
+
+    aggregated = []
+    for (strategy, diversity), metrics in sorted(groups.items()):
+        agg = {"strategy": strategy, "diversity": diversity}
+        for metric in ["mrr", "ndcg@10", "ilad", "ilmd"]:
+            values = metrics[metric]
             agg[metric] = float(np.mean(values))
             agg[f"{metric}_std"] = float(np.std(values))
         aggregated.append(agg)
