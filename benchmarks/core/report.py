@@ -354,6 +354,65 @@ def generate_latency_plot(output_path: Path) -> None:
     plt.close()
 
 
+def _log_per_strategy_diversity_tables(all_data: list[dict]) -> None:
+    """Log per-strategy tables showing metrics across diversity values (averaged over datasets)."""
+    datasets = sorted(set(p["dataset"] for p in all_data))
+    lambda_values = sorted(set(p["lambda"] for p in all_data))
+
+    logger.info("\n=== Per-Strategy Diversity Sweep (Averaged Across Datasets) ===")
+
+    for strategy in STRATEGIES:
+        logger.info(f"\n#### {strategy.upper()}")
+        logger.info("")
+        logger.info("| `diversity` | nDCG Retention | ILAD | ILMD |")
+        logger.info("|:-----------:|:--------------:|:----:|:----:|")
+
+        for lam in lambda_values:
+            ndcg_rets = []
+            ilads = []
+            ilmds = []
+            ilad_pct_gains = []
+            ilmd_pct_gains = []
+
+            for dataset in datasets:
+                dataset_points = [p for p in all_data if p["dataset"] == dataset]
+                bounds = _get_dataset_baseline_and_bounds(dataset_points)
+                if bounds is None:
+                    continue
+
+                baseline_ndcg, ilad_baseline, _, ilmd_baseline, _ = bounds
+
+                # Find point for this strategy/lambda
+                point = next(
+                    (p for p in dataset_points if p["strategy"] == strategy and p["lambda"] == lam),
+                    None,
+                )
+                if point is None:
+                    continue
+
+                ndcg_rets.append(point["ndcg"] / baseline_ndcg if baseline_ndcg > 0 else 0)
+                ilads.append(point["ilad"])
+                ilmds.append(point["ilmd"])
+
+                if ilad_baseline > 0:
+                    ilad_pct_gains.append((point["ilad"] - ilad_baseline) / ilad_baseline * 100)
+                if ilmd_baseline > 0:
+                    ilmd_pct_gains.append((point["ilmd"] - ilmd_baseline) / ilmd_baseline * 100)
+
+            if ndcg_rets:
+                avg_ndcg_ret = sum(ndcg_rets) / len(ndcg_rets)
+                avg_ilad = sum(ilads) / len(ilads)
+                avg_ilmd = sum(ilmds) / len(ilmds)
+                avg_ilad_gain = sum(ilad_pct_gains) / len(ilad_pct_gains) if ilad_pct_gains else 0
+                avg_ilmd_gain = sum(ilmd_pct_gains) / len(ilmd_pct_gains) if ilmd_pct_gains else 0
+
+                logger.info(
+                    f"| {lam:.1f}         | {avg_ndcg_ret:.1%}          | "
+                    f"{avg_ilad:.2f} (+{avg_ilad_gain:.0f}%) | "
+                    f"{avg_ilmd:.2f} (+{avg_ilmd_gain:.0f}%) |"
+                )
+
+
 def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
     """Log relevance-budgeted analysis tables."""
     for floor in RELEVANCE_FLOORS:
@@ -462,5 +521,8 @@ def generate_report(results_dir: Path) -> None:
 
     # Relevance-budgeted analysis
     _log_relevance_budgeted_analysis(all_data)
+
+    # Per-strategy diversity sweep tables
+    _log_per_strategy_diversity_tables(all_data)
 
     logger.info(f"\nReport generated: {results_dir}")
