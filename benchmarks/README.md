@@ -36,21 +36,21 @@ We report results at two relevance floors:
 
 #### 99% Relevance Floor
 
-| Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
-|----------|:--------:|:----:|:----:|:-----------:|----------|
-| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | 0.7 | Overall balance, avoiding similar pairs |
-| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | 0.7 | Simple baseline |
-| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | 0.8 | Sequence-aware feeds |
-| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | 0.4 | Maximum variety (ILAD) |
+| Strategy | Combined | ILAD | ILMD | `diversity` |
+|----------|:--------:|:----:|:----:|:-----------:|
+| **DPP**  | **0.273** | 0.59 (+51%) | **0.24 (+104%)** | 0.7 |
+| MMR      | 0.224    | 0.52 (+32%) | 0.20 (+67%)      | 0.7 |
+| SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | 0.8 |
+| MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | 0.4 |
 
 #### 95% Relevance Floor
 
-| Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
-|----------|:--------:|:----:|:----:|:-----------:|----------|
-| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | 0.9 | Overall balance, avoiding similar pairs |
-| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | 0.9 | Sequence-aware feeds |
-| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 | Simple baseline |
-| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 | Maximum variety (ILAD) |
+| Strategy | Combined | ILAD | ILMD | `diversity` |
+|----------|:--------:|:----:|:----:|:-----------:|
+| **DPP**  | **0.389** | 0.69 (+79%) | **0.31 (+178%)** | 0.9 |
+| SSD      | 0.254    | 0.60 (+52%) | 0.23 (+88%)      | 0.9 |
+| MMR      | 0.247    | 0.57 (+41%) | 0.24 (+97%)      | 0.8 |
+| MSD      | 0.228    | **0.68 (+71%)** | 0.20 (+47%)  | 0.5 |
 
 *Combined Score = geometric mean of normalized ILAD and ILMD gains (higher = better). Percentages show improvement vs baseline (diversity=0). `diversity` shows the typical parameter value to achieve these results.*
 
@@ -144,49 +144,6 @@ python -m benchmarks report
 | Last.FM | MSD (`diversity`=0.6) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
 | Amazon-VG | MSD (`diversity`=0.5) | MMR (`diversity`=0.7) | MSD (`diversity`=0.5) |
 | Goodreads | MSD (`diversity`=0.5) | DPP (`diversity`=0.8) | DPP (`diversity`=0.8) |
-
-</details>
-
-<details>
-<summary>Per-Dataset Detailed Metrics (95% floor)</summary>
-
-The tables below show best achievable metrics per strategy while maintaining ≥95% of baseline nDCG.
-
-#### MovieLens-32M
-
-| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
-|----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.9              | 0.052 | 0.67 | 0.31 | **0.46** |
-| SSD      | 0.9              | 0.053 | 0.60 | 0.22 | 0.32     |
-| MSD      | 0.6              | 0.055 | 0.67 | 0.13 | 0.25     |
-| MMR      | 0.8              | 0.055 | 0.56 | 0.17 | 0.27     |
-
-#### Last.FM
-
-| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
-|----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.8              | 0.151 | 0.61 | 0.22 | **0.37** |
-| SSD      | 0.9              | 0.152 | 0.52 | 0.14 | 0.18     |
-| MSD      | 0.6              | 0.154 | 0.63 | 0.13 | 0.22     |
-| MMR      | 0.8              | 0.153 | 0.52 | 0.16 | 0.19     |
-
-#### Amazon Video Games
-
-| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
-|----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **MSD**  | 0.5              | 0.269 | 0.95 | 0.48 | **0.50** |
-| DPP      | 0.9              | 0.279 | 0.89 | 0.52 | 0.48     |
-| SSD      | 0.9              | 0.271 | 0.81 | 0.35 | 0.38     |
-| MMR      | 0.7              | 0.289 | 0.88 | 0.53 | 0.27     |
-
-#### Goodreads
-
-| Strategy | Best `diversity` | nDCG | ILAD | ILMD | Combined |
-|----------|:----------------:|:----:|:----:|:----:|:--------:|
-| **DPP**  | 0.8              | 0.027 | 0.60 | 0.17 | **0.24** |
-| SSD      | 0.9              | 0.026 | 0.47 | 0.10 | 0.10     |
-| MSD      | 0.5              | 0.027 | 0.67 | 0.11 | 0.13     |
-| MMR      | 0.7              | 0.028 | 0.44 | 0.11 | 0.12     |
 
 </details>
 
