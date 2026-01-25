@@ -98,6 +98,7 @@ def _compute_relevance_budgeted_scores(
 
         # Goal 3: Best combined (geometric mean of normalized gains relative to baseline)
         def combined_score(point: dict) -> float:
+            """2-way score: geometric mean of ILAD and ILMD gains."""
             ilad_range = ilad_max - ilad_baseline
             ilmd_range = ilmd_max - ilmd_baseline
             if ilad_range == 0 or ilmd_range == 0:
@@ -106,6 +107,19 @@ def _compute_relevance_budgeted_scores(
             ilad_gain = max(0.0, min(1.0, (point["ilad"] - ilad_baseline) / ilad_range))
             ilmd_gain = max(0.0, min(1.0, (point["ilmd"] - ilmd_baseline) / ilmd_range))
             return (ilad_gain * ilmd_gain) ** 0.5  # Geometric mean
+
+        def combined_score_3way(point: dict) -> float:
+            """3-way score: includes nDCG gain (rewards relevance improvement)."""
+            ilad_range = ilad_max - ilad_baseline
+            ilmd_range = ilmd_max - ilmd_baseline
+            if ilad_range == 0 or ilmd_range == 0:
+                return 0.0
+            ilad_gain = max(0.0, min(1.0, (point["ilad"] - ilad_baseline) / ilad_range))
+            ilmd_gain = max(0.0, min(1.0, (point["ilmd"] - ilmd_baseline) / ilmd_range))
+            # nDCG gain: ratio vs baseline, clamped to [0, 2] then normalized to [0, 1]
+            ndcg_ratio = point["ndcg"] / baseline_ndcg if baseline_ndcg > 0 else 1.0
+            ndcg_gain = max(0.0, min(1.0, (ndcg_ratio - 0.5) / 1.0))  # 0.5-1.5 -> 0-1
+            return (ilad_gain * ilmd_gain * ndcg_gain) ** (1 / 3)  # Cubic root for 3-way
 
         # Tie-break by higher nDCG, lower lambda
         best_combined = max(feasible, key=lambda p: (combined_score(p), p["ndcg"], -p["lambda"]))
@@ -117,6 +131,18 @@ def _compute_relevance_budgeted_scores(
             "ilad": best_combined["ilad"],
             "ilmd": best_combined["ilmd"],
             "score": combined_score(best_combined),
+        }
+
+        # Goal 4: Best 3-way score (includes nDCG improvement)
+        best_3way = max(feasible, key=lambda p: (combined_score_3way(p), p["ndcg"], -p["lambda"]))
+        results[dataset]["best_3way"] = {
+            "strategy": best_3way["strategy"],
+            "lambda": best_3way["lambda"],
+            "ndcg": best_3way["ndcg"],
+            "ndcg_vs_baseline": best_3way["ndcg"] / baseline_ndcg,
+            "ilad": best_3way["ilad"],
+            "ilmd": best_3way["ilmd"],
+            "score": combined_score_3way(best_3way),
         }
 
     return results
@@ -154,21 +180,81 @@ def _get_dataset_baseline_and_bounds(
     return baseline_ndcg, ilad_baseline, ilad_max, ilmd_baseline, ilmd_max
 
 
-def _compute_strategy_scorecard(all_data: list[dict], relevance_floor: float = 0.95) -> dict[str, dict[str, float]]:
+def _aggregate_strategy_metrics(strategy_data: dict[str, list[float]]) -> dict[str, float]:
+    """Aggregate per-dataset metrics into averages."""
+    return {key: sum(values) / len(values) if values else 0.0 for key, values in strategy_data.items()}
+
+
+def _compute_combined_score_2way(
+    point: dict, ilad_baseline: float, ilad_range: float, ilmd_baseline: float, ilmd_range: float
+) -> float:
+    """Compute 2-way combined score (ILAD × ILMD)."""
+    ilad_gain = max(0.0, min(1.0, (point["ilad"] - ilad_baseline) / ilad_range))
+    ilmd_gain = max(0.0, min(1.0, (point["ilmd"] - ilmd_baseline) / ilmd_range))
+    return (ilad_gain * ilmd_gain) ** 0.5
+
+
+def _compute_combined_score_3way(
+    point: dict, baseline_ndcg: float, ilad_baseline: float, ilad_range: float, ilmd_baseline: float, ilmd_range: float
+) -> float:
+    """Compute 3-way combined score (nDCG × ILAD × ILMD)."""
+    ilad_gain = max(0.0, min(1.0, (point["ilad"] - ilad_baseline) / ilad_range))
+    ilmd_gain = max(0.0, min(1.0, (point["ilmd"] - ilmd_baseline) / ilmd_range))
+    ndcg_ratio = point["ndcg"] / baseline_ndcg if baseline_ndcg > 0 else 1.0
+    ndcg_gain = max(0.0, min(1.0, (ndcg_ratio - 0.5) / 1.0))
+    return (ilad_gain * ilmd_gain * ndcg_gain) ** (1 / 3)
+
+
+def _update_accumulator(
+    acc: dict[str, list[float]],
+    point: dict,
+    baseline_ndcg: float,
+    ilad_baseline: float,
+    ilad_range: float,
+    ilmd_baseline: float,
+    ilmd_range: float,
+) -> None:
+    """Update accumulator with a point's metrics."""
+    acc["scores"].append(_compute_combined_score_2way(point, ilad_baseline, ilad_range, ilmd_baseline, ilmd_range))
+    acc["scores_3way"].append(
+        _compute_combined_score_3way(point, baseline_ndcg, ilad_baseline, ilad_range, ilmd_baseline, ilmd_range)
+    )
+    acc["ilads"].append(point["ilad"])
+    acc["ilmds"].append(point["ilmd"])
+    acc["ndcg_ret"].append(point["ndcg"] / baseline_ndcg)
+    acc["lambdas"].append(point["lambda"])
+    if ilad_baseline > 0:
+        acc["ilad_pct"].append((point["ilad"] - ilad_baseline) / ilad_baseline * 100)
+    if ilmd_baseline > 0:
+        acc["ilmd_pct"].append((point["ilmd"] - ilmd_baseline) / ilmd_baseline * 100)
+    acc["ndcg_gain"].append((point["ndcg"] / baseline_ndcg - 1) * 100)
+
+
+def _compute_strategy_scorecard(
+    all_data: list[dict], relevance_floor: float | None = None
+) -> dict[str, dict[str, float]]:
     """
     Compute per-strategy aggregate scores across all datasets.
 
-    Returns combined score, ILAD/ILMD at best operating point, percentage gains vs baseline,
-    nDCG retention, and typical diversity.
+    If relevance_floor is None, finds the optimal point for each strategy (no constraint).
+    If relevance_floor is set, only considers points above that fraction of baseline nDCG.
     """
     datasets = sorted(set(p["dataset"] for p in all_data))
-    strategy_scores: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ilads: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ilmds: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ilad_pct_gains: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ilmd_pct_gains: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_ndcg_ret: dict[str, list[float]] = {s: [] for s in STRATEGIES}
-    strategy_lambdas: dict[str, list[float]] = {s: [] for s in STRATEGIES}
+
+    accumulators: dict[str, dict[str, list[float]]] = {
+        s: {
+            "scores": [],
+            "scores_3way": [],
+            "ilads": [],
+            "ilmds": [],
+            "ilad_pct": [],
+            "ilmd_pct": [],
+            "ndcg_ret": [],
+            "ndcg_gain": [],
+            "lambdas": [],
+        }
+        for s in STRATEGIES
+    }
 
     for dataset in datasets:
         dataset_points = [p for p in all_data if p["dataset"] == dataset]
@@ -177,60 +263,113 @@ def _compute_strategy_scorecard(all_data: list[dict], relevance_floor: float = 0
             continue
 
         baseline_ndcg, ilad_baseline, ilad_max, ilmd_baseline, ilmd_max = bounds
-        ndcg_floor = relevance_floor * baseline_ndcg
         ilad_range = ilad_max - ilad_baseline
         ilmd_range = ilmd_max - ilmd_baseline
 
-        def combined_score(point: dict) -> float:
-            # Clamp gains to [0, 1] to handle noise/non-monotonic behavior
+        for strategy in STRATEGIES:
+            strategy_points = [p for p in dataset_points if p["strategy"] == strategy]
+
+            if relevance_floor is not None:
+                ndcg_floor = relevance_floor * baseline_ndcg
+                feasible = [p for p in strategy_points if p["ndcg"] >= ndcg_floor]
+            else:
+                feasible = strategy_points
+
+            if not feasible:
+                continue
+
+            best_point = max(
+                feasible,
+                key=lambda p: (
+                    _compute_combined_score_3way(
+                        p, baseline_ndcg, ilad_baseline, ilad_range, ilmd_baseline, ilmd_range
+                    ),
+                    p["ndcg"],
+                    -p["lambda"],
+                ),
+            )
+            _update_accumulator(
+                accumulators[strategy], best_point, baseline_ndcg, ilad_baseline, ilad_range, ilmd_baseline, ilmd_range
+            )
+
+    scorecard: dict[str, dict[str, float]] = {}
+    for strategy, acc in accumulators.items():
+        if acc["scores"]:
+            scorecard[strategy] = {
+                "combined_score": sum(acc["scores"]) / len(acc["scores"]),
+                "combined_score_3way": sum(acc["scores_3way"]) / len(acc["scores_3way"]),
+                "ilad_at_best": sum(acc["ilads"]) / len(acc["ilads"]),
+                "ilmd_at_best": sum(acc["ilmds"]) / len(acc["ilmds"]),
+                "ilad_pct_gain": sum(acc["ilad_pct"]) / len(acc["ilad_pct"]) if acc["ilad_pct"] else 0.0,
+                "ilmd_pct_gain": sum(acc["ilmd_pct"]) / len(acc["ilmd_pct"]) if acc["ilmd_pct"] else 0.0,
+                "ndcg_retention": sum(acc["ndcg_ret"]) / len(acc["ndcg_ret"]),
+                "ndcg_pct_gain": sum(acc["ndcg_gain"]) / len(acc["ndcg_gain"]),
+                "typical_diversity": sum(acc["lambdas"]) / len(acc["lambdas"]),
+            }
+
+    return scorecard
+
+
+def _compute_sweet_spots(all_data: list[dict]) -> dict[str, dict[str, float]]:
+    """
+    Find the optimal operating point (sweet spot) for each strategy.
+
+    The sweet spot maximizes combined diversity while nDCG is at or above baseline.
+    This shows the "free lunch" region where you get diversity without losing relevance.
+    """
+    datasets = sorted(set(p["dataset"] for p in all_data))
+    strategy_sweet_spots: dict[str, list[dict]] = {s: [] for s in STRATEGIES}
+
+    for dataset in datasets:
+        dataset_points = [p for p in all_data if p["dataset"] == dataset]
+        bounds = _get_dataset_baseline_and_bounds(dataset_points)
+        if bounds is None:
+            continue
+
+        baseline_ndcg, ilad_baseline, ilad_max, ilmd_baseline, ilmd_max = bounds
+        ilad_range = ilad_max - ilad_baseline
+        ilmd_range = ilmd_max - ilmd_baseline
+
+        def combined_diversity(point: dict) -> float:
             ilad_gain = max(0.0, min(1.0, (point["ilad"] - ilad_baseline) / ilad_range))
             ilmd_gain = max(0.0, min(1.0, (point["ilmd"] - ilmd_baseline) / ilmd_range))
             return (ilad_gain * ilmd_gain) ** 0.5
 
         for strategy in STRATEGIES:
             strategy_points = [p for p in dataset_points if p["strategy"] == strategy]
-            feasible = [p for p in strategy_points if p["ndcg"] >= ndcg_floor]
-            if not feasible:
-                continue
+            # Find points where nDCG >= baseline (no loss or gain)
+            no_loss = [p for p in strategy_points if p["ndcg"] >= baseline_ndcg]
 
-            # Select best point with tie-breaker
-            best_point = max(feasible, key=lambda p: (combined_score(p), p["ndcg"], -p["lambda"]))
-            strategy_scores[strategy].append(combined_score(best_point))
-            strategy_ilads[strategy].append(best_point["ilad"])
-            strategy_ilmds[strategy].append(best_point["ilmd"])
-            strategy_ndcg_ret[strategy].append(best_point["ndcg"] / baseline_ndcg)
-            strategy_lambdas[strategy].append(best_point["lambda"])
-
-            # Compute percentage gain over baseline
-            if ilad_baseline > 0:
-                ilad_pct_gain = (best_point["ilad"] - ilad_baseline) / ilad_baseline * 100
-                strategy_ilad_pct_gains[strategy].append(ilad_pct_gain)
-            if ilmd_baseline > 0:
-                ilmd_pct_gain = (best_point["ilmd"] - ilmd_baseline) / ilmd_baseline * 100
-                strategy_ilmd_pct_gains[strategy].append(ilmd_pct_gain)
+            if no_loss:
+                # Find point with best diversity that doesn't lose relevance
+                best = max(no_loss, key=lambda p: (combined_diversity(p), p["ndcg"], -p["lambda"]))
+                strategy_sweet_spots[strategy].append(
+                    {
+                        "lambda": best["lambda"],
+                        "ndcg_gain": (best["ndcg"] / baseline_ndcg - 1) * 100,
+                        "ilad": best["ilad"],
+                        "ilmd": best["ilmd"],
+                        "ilad_gain": (best["ilad"] - ilad_baseline) / ilad_baseline * 100 if ilad_baseline > 0 else 0,
+                        "ilmd_gain": (best["ilmd"] - ilmd_baseline) / ilmd_baseline * 100 if ilmd_baseline > 0 else 0,
+                    }
+                )
 
     # Aggregate across datasets
-    scorecard: dict[str, dict[str, float]] = {}
+    sweet_spots: dict[str, dict[str, float]] = {}
     for strategy in STRATEGIES:
-        if strategy_scores[strategy]:
-            scores = strategy_scores[strategy]
-            ilads = strategy_ilads[strategy]
-            ilmds = strategy_ilmds[strategy]
-            ilad_pct = strategy_ilad_pct_gains[strategy]
-            ilmd_pct = strategy_ilmd_pct_gains[strategy]
-            ndcg_rets = strategy_ndcg_ret[strategy]
-            lambdas = strategy_lambdas[strategy]
-            scorecard[strategy] = {
-                "combined_score": sum(scores) / len(scores),
-                "ilad_at_best": sum(ilads) / len(ilads),
-                "ilmd_at_best": sum(ilmds) / len(ilmds),
-                "ilad_pct_gain": sum(ilad_pct) / len(ilad_pct) if ilad_pct else 0.0,
-                "ilmd_pct_gain": sum(ilmd_pct) / len(ilmd_pct) if ilmd_pct else 0.0,
-                "ndcg_retention": sum(ndcg_rets) / len(ndcg_rets),
-                "typical_diversity": sum(lambdas) / len(lambdas),
+        spots = strategy_sweet_spots[strategy]
+        if spots:
+            sweet_spots[strategy] = {
+                "typical_diversity": sum(s["lambda"] for s in spots) / len(spots),
+                "avg_ndcg_gain": sum(s["ndcg_gain"] for s in spots) / len(spots),
+                "avg_ilad": sum(s["ilad"] for s in spots) / len(spots),
+                "avg_ilmd": sum(s["ilmd"] for s in spots) / len(spots),
+                "avg_ilad_gain": sum(s["ilad_gain"] for s in spots) / len(spots),
+                "avg_ilmd_gain": sum(s["ilmd_gain"] for s in spots) / len(spots),
+                "datasets_with_sweet_spot": float(len(spots)),
             }
 
-    return scorecard
+    return sweet_spots
 
 
 def generate_pareto_plot(all_data: list[dict], output_path: Path, diversity_metric: str = "ilad") -> None:
@@ -433,69 +572,136 @@ def _log_per_strategy_diversity_tables(all_data: list[dict]) -> None:
                 )
 
 
-def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
-    """Log relevance-budgeted analysis tables."""
-    for floor in RELEVANCE_FLOORS:
-        floor_pct = int(floor * 100)
-        logger.info(f"\n=== Relevance-Budgeted Analysis (≥{floor_pct}% baseline nDCG) ===")
+def _log_per_dataset_configs(recommendations: dict, floor_pct: int) -> None:
+    """Log per-dataset config table."""
+    name_map = {
+        "ml-32m": "MovieLens-32M",
+        "lastfm": "Last.FM",
+        "amazon-video-games": "Amazon Video Games",
+        "goodreads": "Goodreads",
+    }
 
-        # Per-dataset recommendations
-        recommendations = _compute_relevance_budgeted_scores(all_data, relevance_floor=floor)
+    logger.info(f"\nBest configs per dataset (maintaining ≥{floor_pct}% baseline relevance):")
+    logger.info("| Dataset | Goal | Strategy | λ | nDCG vs Base | ILAD | ILMD |")
+    logger.info("|---------|------|----------|---|--------------|------|------|")
 
-        name_map = {
-            "ml-32m": "MovieLens-32M",
-            "lastfm": "Last.FM",
-            "amazon-video-games": "Amazon Video Games",
-            "goodreads": "Goodreads",
-        }
-
-        logger.info(f"\nBest configs per dataset (maintaining ≥{floor_pct}% baseline relevance):")
-        logger.info("| Dataset | Goal | Strategy | λ | nDCG vs Base | ILAD | ILMD |")
-        logger.info("|---------|------|----------|---|--------------|------|------|")
-
-        for dataset, goals in recommendations.items():
-            display_name = name_map.get(dataset, dataset)[:16]
-            for goal, config in goals.items():
-                goal_display = {"max_ilad": "Max ILAD", "max_ilmd": "Max ILMD", "best_combined": "Best Overall"}[goal]
-                strategy_name = str(config["strategy"]).upper()
-                logger.info(
-                    f"| {display_name:16} | {goal_display:12} | {strategy_name:8} | "
-                    f"{config['lambda']:.1f} | {config['ndcg_vs_baseline']:.1%} | "
-                    f"{config['ilad']:.3f} | {config['ilmd']:.3f} |"
-                )
-
-        # Strategy scorecard
-        scorecard = _compute_strategy_scorecard(all_data, relevance_floor=floor)
-        logger.info(f"\n=== Strategy Scorecard at {floor_pct}% floor (averaged across datasets) ===")
-        logger.info("| Strategy | Combined | ILAD | ILMD | nDCG Ret | Typical diversity |")
-        logger.info("|----------|----------|------|------|----------|-------------------|")
-
-        sorted_strategies = sorted(scorecard.items(), key=lambda x: x[1]["combined_score"], reverse=True)
-        for strategy, scores in sorted_strategies:
+    for dataset, goals in recommendations.items():
+        display_name = name_map.get(dataset, dataset)[:16]
+        for goal, config in goals.items():
+            if goal == "best_3way":
+                continue
+            goal_display = {"max_ilad": "Max ILAD", "max_ilmd": "Max ILMD", "best_combined": "Best Overall"}[goal]
+            strategy_name = str(config["strategy"]).upper()
             logger.info(
-                f"| {strategy.upper():8} | {scores['combined_score']:.3f}    | "
-                f"{scores['ilad_at_best']:.2f} | {scores['ilmd_at_best']:.2f} | "
-                f"{scores['ndcg_retention']:.1%}    | {scores['typical_diversity']:.1f}               |"
+                f"| {display_name:16} | {goal_display:12} | {strategy_name:8} | "
+                f"{config['lambda']:.1f} | {config['ndcg_vs_baseline']:.1%} | "
+                f"{config['ilad']:.3f} | {config['ilmd']:.3f} |"
             )
 
-        # Summary
-        logger.info(f"\n=== Key Findings ({floor_pct}% floor) ===")
-        if sorted_strategies:
-            best_strategy = sorted_strategies[0][0].upper()
-            logger.info(f"Best overall (balanced ILAD+ILMD): {best_strategy}")
 
-        # Count wins per goal
-        goal_wins: dict[str, dict[str, int]] = {"max_ilad": {}, "max_ilmd": {}, "best_combined": {}}
-        for goals in recommendations.values():
-            for goal, config in goals.items():
-                strategy_str = str(config["strategy"])
-                goal_wins[goal][strategy_str] = goal_wins[goal].get(strategy_str, 0) + 1
+def _log_scorecard_table(scorecard: dict[str, dict[str, float]], floor_pct: int) -> list[tuple[str, dict]]:
+    """Log scorecard table and return sorted strategies."""
+    logger.info(f"\n=== Strategy Scorecard at {floor_pct}% floor (averaged across datasets) ===")
+    logger.info("| Strategy | Score (3-way) | nDCG Δ | ILAD (+%) | ILMD (+%) | diversity |")
+    logger.info("|----------|---------------|--------|-----------|-----------|-----------|")
 
-        for goal, wins in goal_wins.items():
-            if wins:
-                winner = max(wins.items(), key=lambda x: x[1])
-                goal_display = {"max_ilad": "Max ILAD", "max_ilmd": "Max ILMD", "best_combined": "Best Overall"}[goal]
-                logger.info(f"  {goal_display}: {winner[0].upper()} ({winner[1]}/{len(recommendations)} datasets)")
+    sorted_strategies = sorted(scorecard.items(), key=lambda x: x[1]["combined_score_3way"], reverse=True)
+    for strategy, scores in sorted_strategies:
+        ndcg_delta = scores["ndcg_pct_gain"]
+        ndcg_str = f"+{ndcg_delta:.1f}%" if ndcg_delta >= 0 else f"{ndcg_delta:.1f}%"
+        logger.info(
+            f"| {strategy.upper():8} | {scores['combined_score_3way']:.3f}         | "
+            f"{ndcg_str:6} | "
+            f"{scores['ilad_at_best']:.2f} (+{scores['ilad_pct_gain']:.0f}%) | "
+            f"{scores['ilmd_at_best']:.2f} (+{scores['ilmd_pct_gain']:.0f}%) | "
+            f"{scores['typical_diversity']:.1f}       |"
+        )
+    return sorted_strategies
+
+
+def _log_per_floor_analysis(all_data: list[dict], floor: float) -> None:
+    """Log analysis for a single relevance floor."""
+    floor_pct = int(floor * 100)
+    logger.info(f"\n=== Relevance-Budgeted Analysis (≥{floor_pct}% baseline nDCG) ===")
+
+    recommendations = _compute_relevance_budgeted_scores(all_data, relevance_floor=floor)
+    _log_per_dataset_configs(recommendations, floor_pct)
+
+    scorecard = _compute_strategy_scorecard(all_data, relevance_floor=floor)
+    sorted_strategies = _log_scorecard_table(scorecard, floor_pct)
+
+    logger.info(f"\n=== Key Findings ({floor_pct}% floor) ===")
+    if sorted_strategies:
+        best_strategy = sorted_strategies[0][0].upper()
+        best_scores = sorted_strategies[0][1]
+        logger.info(f"Best overall (3-way score): {best_strategy}")
+        logger.info(f"  nDCG: {'+' if best_scores['ndcg_pct_gain'] >= 0 else ''}{best_scores['ndcg_pct_gain']:.1f}%")
+        logger.info(f"  ILAD: +{best_scores['ilad_pct_gain']:.0f}%")
+        logger.info(f"  ILMD: +{best_scores['ilmd_pct_gain']:.0f}%")
+
+    goal_wins: dict[str, dict[str, int]] = {"max_ilad": {}, "max_ilmd": {}, "best_combined": {}}
+    for goals in recommendations.values():
+        for goal, config in goals.items():
+            if goal == "best_3way":
+                continue
+            strategy_str = str(config["strategy"])
+            goal_wins[goal][strategy_str] = goal_wins[goal].get(strategy_str, 0) + 1
+
+    for goal, wins in goal_wins.items():
+        if wins:
+            winner = max(wins.items(), key=lambda x: x[1])
+            goal_display = {"max_ilad": "Max ILAD", "max_ilmd": "Max ILMD", "best_combined": "Best Overall"}[goal]
+            logger.info(f"  {goal_display}: {winner[0].upper()} ({winner[1]}/{len(recommendations)} datasets)")
+
+
+def _log_relevance_budgeted_analysis(all_data: list[dict]) -> None:
+    """Log relevance-budgeted analysis tables."""
+    # Main results: optimal point per strategy (no floor constraint)
+    logger.info("\n=== Overall Results (Optimal Operating Point) ===")
+    logger.info("Best 3-way combined score (nDCG × ILAD × ILMD) per strategy, no constraints:")
+
+    scorecard = _compute_strategy_scorecard(all_data, relevance_floor=None)
+    logger.info("| Strategy | Score | nDCG Δ | ILAD | ILMD | `diversity` |")
+    logger.info("|----------|:-----:|:------:|:----:|:----:|:-----------:|")
+
+    sorted_strategies = sorted(scorecard.items(), key=lambda x: x[1]["combined_score_3way"], reverse=True)
+    for strategy, scores in sorted_strategies:
+        ndcg_delta = scores["ndcg_pct_gain"]
+        ndcg_str = f"+{ndcg_delta:.1f}%" if ndcg_delta >= 0 else f"{ndcg_delta:.1f}%"
+        logger.info(
+            f"| **{strategy.upper()}**  | **{scores['combined_score_3way']:.3f}** | "
+            f"{ndcg_str} | "
+            f"{scores['ilad_at_best']:.2f} (+{scores['ilad_pct_gain']:.0f}%) | "
+            f"{scores['ilmd_at_best']:.2f} (+{scores['ilmd_pct_gain']:.0f}%) | "
+            f"{scores['typical_diversity']:.1f} |"
+        )
+
+    # Floor-constrained analysis (for detailed results)
+    for floor in RELEVANCE_FLOORS:
+        _log_per_floor_analysis(all_data, floor)
+
+    # Sweet spot analysis (no relevance loss)
+    logger.info("\n=== Sweet Spot Analysis (no relevance loss) ===")
+    sweet_spots = _compute_sweet_spots(all_data)
+
+    if sweet_spots:
+        logger.info("Best diversity gain without losing relevance:")
+        logger.info("| Strategy | diversity | nDCG Δ | ILAD (+%) | ILMD (+%) | datasets |")
+        logger.info("|----------|-----------|--------|-----------|-----------|----------|")
+
+        sorted_spots = sorted(
+            sweet_spots.items(), key=lambda x: x[1]["avg_ilad_gain"] + x[1]["avg_ilmd_gain"], reverse=True
+        )
+        for strategy, spot in sorted_spots:
+            ndcg_delta = spot["avg_ndcg_gain"]
+            ndcg_str = f"+{ndcg_delta:.1f}%" if ndcg_delta >= 0 else f"{ndcg_delta:.1f}%"
+            logger.info(
+                f"| {strategy.upper():8} | {spot['typical_diversity']:.1f}       | "
+                f"{ndcg_str:6} | "
+                f"+{spot['avg_ilad_gain']:.0f}%      | "
+                f"+{spot['avg_ilmd_gain']:.0f}%      | "
+                f"{spot['datasets_with_sweet_spot']}/4      |"
+            )
 
 
 def generate_report(results_dir: Path) -> None:
