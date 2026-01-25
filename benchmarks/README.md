@@ -31,10 +31,10 @@ We use a **relevance-budgeted** approach: for each strategy, we find the best co
 ### Overall Results
 
 We report results at two relevance floors:
-- **Strict (99%)**: Near-zero relevance loss, production-safe
-- **Default (95%)**: Balanced tradeoff with more diversity headroom
+- **99%**: Near-zero relevance loss, production-safe
+- **95%**: Balanced tradeoff with more diversity headroom
 
-#### Strict Floor (99% Relevance)
+#### 99% Relevance Floor
 
 | Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
 |----------|:--------:|:----:|:----:|:-----------:|----------|
@@ -43,7 +43,7 @@ We report results at two relevance floors:
 | SSD      | 0.195    | 0.54 (+38%) | 0.18 (+55%)      | 0.8 | Sequence-aware feeds |
 | MSD      | 0.166    | **0.61 (+54%)** | 0.16 (+36%)  | 0.4 | Maximum variety (ILAD) |
 
-#### Default Floor (95% Relevance)
+#### 95% Relevance Floor
 
 | Strategy | Combined | ILAD | ILMD | `diversity` | Best For |
 |----------|:--------:|:----:|:----:|:-----------:|----------|
@@ -124,7 +124,7 @@ python -m benchmarks report
 ## Detailed Results
 
 <details>
-<summary>Per-Dataset Best Configs (≥99% baseline nDCG - Strict)</summary>
+<summary>Per-Dataset Best Configs (99% Relevance Floor)</summary>
 
 | Dataset | Max ILAD | Max ILMD | Best Overall |
 |---------|:--------:|:--------:|:------------:|
@@ -136,7 +136,7 @@ python -m benchmarks report
 </details>
 
 <details>
-<summary>Per-Dataset Best Configs (≥95% baseline nDCG - Default)</summary>
+<summary>Per-Dataset Best Configs (95% Relevance Floor)</summary>
 
 | Dataset | Max ILAD | Max ILMD | Best Overall |
 |---------|:--------:|:--------:|:------------:|
@@ -194,6 +194,11 @@ The tables below show best achievable metrics per strategy while maintaining ≥
 <summary>Per-Strategy Diversity Sweep (Averaged Across Datasets)</summary>
 
 Shows how each strategy's metrics change as you increase `diversity`, averaged across all 4 datasets.
+
+> **Note:** nDCG Retention can exceed 100% and may not decrease monotonically. This happens because
+> diversification can sometimes *improve* relevance by breaking ties among similar items or surfacing
+> items that better match the held-out test item. This effect is dataset-dependent and typically
+> occurs at moderate diversity levels before eventually declining at high diversity.
 
 #### MMR
 
@@ -263,93 +268,7 @@ Shows how each strategy's metrics change as you increase `diversity`, averaged a
 
 </details>
 
-<details>
-<summary>Full Results by Diversity Value (Per-Dataset)</summary>
 
-Complete metrics for each strategy at every `diversity` value (0.0-1.0). Use these tables to see how metrics change as you increase diversity.
-
-#### MovieLens-32M
-
-| Strategy | `diversity` | nDCG | nDCG Ret | ILAD | ILAD Gain | ILMD | ILMD Gain | Combined |
-|----------|:-----------:|:----:|:--------:|:----:|:---------:|:----:|:---------:|:--------:|
-| DPP | 0.0 | 0.055 | 100% | 0.29 | +0% | 0.07 | +0% | 0.000 |
-| DPP | 0.1 | 0.061 | 112% | 0.34 | +18% | 0.09 | +36% | 0.067 |
-| DPP | 0.2 | 0.061 | 112% | 0.35 | +20% | 0.09 | +40% | 0.074 |
-| DPP | 0.3 | 0.061 | 112% | 0.36 | +23% | 0.10 | +45% | 0.084 |
-| DPP | 0.4 | 0.062 | 113% | 0.37 | +27% | 0.10 | +53% | 0.099 |
-| DPP | 0.5 | 0.063 | 115% | 0.39 | +32% | 0.11 | +62% | 0.117 |
-| DPP | 0.6 | 0.063 | 115% | 0.41 | +40% | 0.12 | +77% | 0.146 |
-| DPP | 0.7 | 0.065 | 119% | 0.45 | +55% | 0.14 | +105% | 0.200 |
-| DPP | 0.8 | 0.062 | 113% | 0.53 | +82% | 0.17 | +163% | 0.304 |
-| DPP | **0.9** | 0.052 | **95%** | 0.67 | +131% | 0.31 | +363% | **0.573** |
-| DPP | 1.0 | 0.015 | 28% | 0.80 | +174% | 0.54 | +722% | 0.932 |
-| MSD | 0.0 | 0.055 | 100% | 0.29 | +0% | 0.07 | +0% | 0.000 |
-| MSD | 0.1 | 0.056 | 102% | 0.31 | +7% | 0.07 | +2% | 0.010 |
-| MSD | 0.2 | 0.057 | 104% | 0.34 | +15% | 0.07 | +4% | 0.020 |
-| MSD | 0.3 | 0.058 | 106% | 0.37 | +26% | 0.07 | +7% | 0.036 |
-| MSD | 0.4 | 0.058 | 105% | 0.41 | +41% | 0.07 | +12% | 0.058 |
-| MSD | 0.5 | 0.055 | 101% | 0.47 | +60% | 0.08 | +18% | 0.087 |
-| MSD | **0.6** | 0.051 | **94%** | 0.54 | +84% | 0.09 | +29% | **0.129** |
-| MSD | 0.7 | 0.048 | 88% | 0.62 | +113% | 0.10 | +46% | 0.190 |
-| MSD | 0.8 | 0.041 | 75% | 0.71 | +143% | 0.11 | +73% | 0.270 |
-| MSD | 0.9 | 0.026 | 47% | 0.79 | +170% | 0.16 | +142% | 0.408 |
-| MSD | 1.0 | 0.013 | 24% | 0.83 | +185% | 0.24 | +262% | 0.579 |
-
-*Bold rows show best configs at 95% relevance floor.*
-
-#### Last.FM
-
-| Strategy | `diversity` | nDCG | nDCG Ret | ILAD | ILAD Gain | ILMD | ILMD Gain | Combined |
-|----------|:-----------:|:----:|:--------:|:----:|:---------:|:----:|:---------:|:--------:|
-| DPP | 0.0 | 0.158 | 100% | 0.37 | +0% | 0.11 | +0% | 0.000 |
-| DPP | 0.1 | 0.160 | 101% | 0.41 | +12% | 0.13 | +19% | 0.043 |
-| DPP | 0.5 | 0.160 | 101% | 0.45 | +21% | 0.15 | +35% | 0.080 |
-| DPP | 0.7 | 0.158 | 100% | 0.52 | +40% | 0.18 | +64% | 0.147 |
-| DPP | **0.8** | 0.151 | **95%** | 0.61 | +67% | 0.22 | +102% | **0.241** |
-| DPP | 0.9 | 0.128 | 81% | 0.83 | +125% | 0.39 | +258% | 0.524 |
-| MSD | 0.0 | 0.158 | 100% | 0.37 | +0% | 0.11 | +0% | 0.000 |
-| MSD | 0.3 | 0.161 | 102% | 0.44 | +20% | 0.11 | +4% | 0.028 |
-| MSD | **0.6** | 0.154 | **97%** | 0.63 | +72% | 0.13 | +22% | **0.116** |
-| MSD | 0.7 | 0.143 | 90% | 0.77 | +109% | 0.16 | +44% | 0.201 |
-| MSD | 0.9 | 0.102 | 65% | 0.97 | +165% | 0.36 | +227% | 0.563 |
-
-*Bold rows show best configs at 95% relevance floor.*
-
-#### Amazon Video Games
-
-| Strategy | `diversity` | nDCG | nDCG Ret | ILAD | ILAD Gain | ILMD | ILMD Gain | Combined |
-|----------|:-----------:|:----:|:--------:|:----:|:---------:|:----:|:---------:|:--------:|
-| DPP | 0.0 | 0.279 | 100% | 0.71 | +0% | 0.25 | +0% | 0.000 |
-| DPP | 0.5 | 0.292 | 105% | 0.76 | +7% | 0.33 | +32% | 0.142 |
-| DPP | 0.7 | 0.297 | 106% | 0.79 | +11% | 0.37 | +51% | 0.219 |
-| DPP | **0.9** | 0.306 | **110%** | 0.88 | +23% | 0.52 | +112% | **0.476** |
-| DPP | 1.0 | 0.171 | 61% | 0.99 | +39% | 0.89 | +261% | 0.944 |
-| MSD | 0.0 | 0.279 | 100% | 0.71 | +0% | 0.25 | +0% | 0.000 |
-| MSD | 0.3 | 0.288 | 103% | 0.86 | +21% | 0.35 | +42% | 0.278 |
-| MSD | **0.5** | 0.269 | **96%** | 0.95 | +34% | 0.48 | +96% | **0.529** |
-| MSD | 0.7 | 0.214 | 77% | 1.00 | +40% | 0.64 | +160% | 0.749 |
-| MSD | 0.9 | 0.170 | 61% | 1.02 | +43% | 0.76 | +209% | 0.883 |
-
-*Bold rows show best configs at 95% relevance floor.*
-
-#### Goodreads
-
-| Strategy | `diversity` | nDCG | nDCG Ret | ILAD | ILAD Gain | ILMD | ILMD Gain | Combined |
-|----------|:-----------:|:----:|:--------:|:----:|:---------:|:----:|:---------:|:--------:|
-| DPP | 0.0 | 0.028 | 100% | 0.31 | +0% | 0.07 | +0% | 0.000 |
-| DPP | 0.5 | 0.028 | 100% | 0.41 | +34% | 0.11 | +53% | 0.098 |
-| DPP | 0.7 | 0.029 | 103% | 0.49 | +59% | 0.14 | +87% | 0.166 |
-| DPP | **0.8** | 0.027 | **97%** | 0.60 | +97% | 0.17 | +136% | **0.264** |
-| DPP | 0.9 | 0.024 | 84% | 0.81 | +164% | 0.34 | +365% | 0.565 |
-| MSD | 0.0 | 0.028 | 100% | 0.31 | +0% | 0.07 | +0% | 0.000 |
-| MSD | 0.3 | 0.028 | 101% | 0.52 | +69% | 0.09 | +21% | 0.088 |
-| MSD | **0.5** | 0.027 | **96%** | 0.67 | +117% | 0.11 | +53% | **0.182** |
-| MSD | 0.7 | 0.021 | 76% | 0.81 | +165% | 0.16 | +121% | 0.326 |
-| MSD | 0.9 | 0.015 | 54% | 0.93 | +203% | 0.31 | +320% | 0.588 |
-
-*Bold rows show best configs at 95% relevance floor.*
-
-</details>
 
 ## Datasets
 
@@ -382,8 +301,8 @@ We use a **relevance floor** approach to ensure fair comparison:
    - **Best Combined**: Geometric mean of normalized ILAD and ILMD gains
 
 We report results at two relevance floors:
-- **Strict (99%)**: Near-zero relevance loss, production-safe
-- **Default (95%)**: Balanced tradeoff with more diversity headroom
+- **99%**: Near-zero relevance loss, production-safe
+- **95%**: Balanced tradeoff with more diversity headroom
 
 The **Combined Score** normalizes gains relative to baseline (λ=0):
 - `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_max - ILAD_baseline)`
