@@ -71,17 +71,17 @@ The following table describes the supported strategies, how they work, their tim
 
 | Strategy                              | What It Does                                                                                   | Time Complexity           | When to Use                                                                                    |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
-| **MMR** (Maximal Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what's already picked. | **O(k · n · d)**          | Simple baseline. Fast, easy to implement, competitive results. Recommended `diversity`: 0.6–0.7 |
-| **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Best for maximum variety (ILAD), but may sacrifice relevance. Recommended `diversity`: 0.4–0.5 |
-| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic "repulsion."                            | **O(k · n · d + n · k²)** | **Recommended default.** Best overall in benchmarks: highest accuracy and diversity. Recommended `diversity`: 0.6–0.8 |
+| **MMR** (Maximal Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what's already picked. | **O(k · n · d)**          | Simple baseline. Fast, easy to implement, competitive results. Recommended `diversity`: 0.4–0.7 |
+| **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Best for maximum variety (ILAD), but may sacrifice relevance. Recommended `diversity`: 0.3–0.5 |
+| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic "repulsion."                            | **O(k · n · d + n · k²)** | **Recommended default.** Best overall in benchmarks: highest accuracy and diversity. Recommended `diversity`: 0.5–0.8 |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset's structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
-| **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll where users consume sequentially. Recommended `diversity`: 0.8–0.9 |
+| **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll where users consume sequentially. Recommended `diversity`: 0.6–0.9 |
 
 ## Benchmarks
 
 All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results can be found in [`benchmarks`](benchmarks/).
 
-**TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
+DPP is the clear winner: it boosts ILAD/ILMD by 26-44% and 54-86% respectivelywhile improving relevance by 1.8-3.1%. Use `diversity=0.5-0.8` for best overall results.
 
 ## Motivation
 

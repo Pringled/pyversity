@@ -8,8 +8,6 @@ reranked with each diversification strategy. Relevance (nDCG) and diversity (ILA
 to answer: *(1) how much can diversification improve relevance? (2) what's the relevance-diversity tradeoff?*
 Latency is also measured as the number of candidates scales.
 
-**TL;DR: DPP wins on all metrics**: best accuracy and best diversity at both relevance floors.
-
 > **Note:** COVER (coverage-based diversification) is not included because it optimizes a different
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
 > collaborative filtering datasets.
