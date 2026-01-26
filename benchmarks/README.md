@@ -15,7 +15,7 @@ Latency is also measured as the number of candidates scales.
 > collaborative filtering datasets.
 
 ## Table of Contents
-- [Key Results](#key-results)
+- [Main Results](#main-results)
 - [Plots](#plots)
 - [Latency](#latency)
 - [Detailed Results](#detailed-results)
@@ -23,7 +23,7 @@ Latency is also measured as the number of candidates scales.
 - [Usage](#usage)
 - [Citations](#citations)
 
-## Key Results
+## Main Results
 
 The results answer two questions:
 

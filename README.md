@@ -79,9 +79,11 @@ The following table describes the supported strategies, how they work, their tim
 
 ## Benchmarks
 
-All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results in [`benchmarks/`](benchmarks/).
+All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results can be found in [`benchmarks`](benchmarks/).
 
 **TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
+
+### Recommendations
 
 | Use Case | Strategy | `diversity` |
 |----------|----------|:-----------:|
@@ -89,9 +91,6 @@ All strategies are evaluated across 4 recommendation datasets. Full methodology 
 | Maximum variety (ILAD) | MSD | 0.4–0.5 |
 | Fewer similar pairs (ILMD) | DPP | 0.7–0.8 |
 | Sequence-aware (feeds, RAG) | SSD | 0.8–0.9 |
-
-→ See [full benchmark results](benchmarks/) for per-dataset tables and Pareto plots.
-
 
 ## Motivation
 
