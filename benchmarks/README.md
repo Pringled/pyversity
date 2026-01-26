@@ -5,7 +5,7 @@ Benchmarks for **MMR**, **MSD**, **DPP**, and **SSD** across 4 recommendation da
 Each dataset uses a leave-one-out evaluation: one item per user is held out as the test set, embeddings
 are trained on the remaining interactions (preventing leakage), candidate items are generated, then
 reranked with each diversification strategy. Relevance (nDCG) and diversity (ILAD, ILMD) are measured
-to answer: *(1) can diversification improve relevance? (2) how much diversity can you gain without hurting it?*
+to answer: *(1) how much can diversification improve relevance? (2) what's the relevance-diversity tradeoff?*
 
 Latency is also measured as the number of candidates scales.
 
@@ -14,16 +14,15 @@ Latency is also measured as the number of candidates scales.
 > collaborative filtering datasets.
 
 ## Table of Contents
-- [Key Findings](#key-findings)
-- [Relevance-Diversity Tradeoff](#relevance-diversity-tradeoff)
+- [Key Results](#key-results)
+- [Plots](#plots)
 - [Latency](#latency)
 - [Detailed Results](#detailed-results)
-- [Usage](#usage)
-- [Datasets](#datasets)
 - [Methodology](#methodology)
+- [Usage](#usage)
 - [Citations](#citations)
 
-## Key Findings
+## Key Results
 
 The results answer two questions:
 
@@ -33,8 +32,6 @@ The results answer two questions:
 Diversity is measured with two metrics:
 - **ILAD** (Intra-List Average Distance): average pairwise diversity—higher means more variety
 - **ILMD** (Intra-List Minimum Distance): minimum pairwise diversity—higher means better worst-case diversity (fewer similar pairs)
-
-**Why can diversification improve nDCG?** In offline leave-one-out evaluation, the "baseline" ranking (no diversification) often places many near-duplicate items at the top. Diversifiers act as intelligent tie-breakers: by spreading selections across different item neighborhoods, they increase the chance of including the held-out test item. This is why moderate diversification can *improve* relevance, not just diversity.
 
 ### Table 1: Accuracy Leaderboard
 
@@ -96,7 +93,7 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 > recently shown items. In content feeds with sliding windows, SSD's novelty-relative-to-recent
 > approach should yield larger effective diversity gains than shown here.
 
-## Relevance-Diversity Tradeoff
+## Plots
 
 ### ILAD (Average Diversity)
 
@@ -128,19 +125,6 @@ All strategies are fast. Even with 10,000 candidates, all complete in <100ms. Th
 | SSD | ~0.5ms | ~5ms | ~80ms |
 
 *Measured with k=10 items selected, d=256 dimensional embeddings. Note: main benchmarks use d=64; latency benchmark uses d=256 to reflect modern embedding model dimensions.*
-
-## Usage
-
-```bash
-# Download datasets
-python -m benchmarks download
-
-# Run benchmarks
-python -m benchmarks run
-
-# Generate report
-python -m benchmarks report
-```
 
 ## Detailed Results
 
@@ -248,7 +232,9 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 
 
 
-## Datasets
+## Methodology
+
+### Datasets
 
 | Dataset | Domain | Interactions | Source |
 |---------|--------|--------------|--------|
@@ -256,8 +242,6 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 | Last.FM | Music | 92K plays | [HetRec 2011](http://ir.ii.uam.es/hetrec2011/) |
 | Amazon Video Games | Games | 47K reviews | [UCSD](https://cseweb.ucsd.edu/~jmcauley/datasets.html) |
 | Goodreads | Books | 869K ratings | [UCSD](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/) |
-
-## Methodology
 
 ### Experimental Setup
 
@@ -274,6 +258,8 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 > The held-out item is eligible as a candidate (the goal is to retrieve it), but other already-interacted
 > items are excluded. This isolates the diversification question: "given fixed candidates and scores,
 > which reranking strategy produces the best relevance-diversity tradeoff?"
+
+**Why can diversification improve nDCG?** In leave-one-out evaluation, the baseline ranking (no diversification) often places many near-duplicate items at the top. Diversifiers act as intelligent tie-breakers: by spreading selections across different item neighborhoods, they increase the chance of including the held-out test item. This is why moderate diversification can *improve* relevance, not just diversity.
 
 ### Relevance-Budgeted Evaluation
 
@@ -324,6 +310,19 @@ results = run_benchmark(config)
 ```
 
 </details>
+
+## Usage
+
+```bash
+# Download datasets
+python -m benchmarks download
+
+# Run benchmarks
+python -m benchmarks run
+
+# Generate report
+python -m benchmarks report
+```
 
 ## Citations
 
