@@ -79,7 +79,7 @@ The following table describes the supported strategies, how they work, their tim
 
 ## Benchmarks
 
-We evaluated all strategies across 4 recommendation datasets (MovieLens-32M, Amazon Video Games, Goodreads, Last.FM). Full methodology and detailed results are in [`benchmarks/`](benchmarks/).
+All strategies evaluated across 4 recommendation datasets (MovieLens-32M, Amazon Video Games, Goodreads, Last.FM). Full methodology and detailed results in [`benchmarks/`](benchmarks/).
 
 **TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
 

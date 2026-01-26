@@ -1,15 +1,15 @@
 # Pyversity Benchmarks
 
-This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, and **SSD** across 4 recommendation datasets.
+Benchmarks for **MMR**, **MSD**, **DPP**, and **SSD** across 4 recommendation datasets.
 
-For each dataset, we use a leave-one-out evaluation protocol: we hold out one item per user as the
-test set, train embeddings on the remaining interactions (preventing leakage), generate candidate items,
-then rerank with each diversification strategy. We measure relevance (nDCG) and diversity (ILAD, ILMD)
-to answer: *(1) can diversification improve relevance? (2) how much diversity can we gain without hurting it?*
+Each dataset uses a leave-one-out evaluation: one item per user is held out as the test set, embeddings
+are trained on the remaining interactions (preventing leakage), candidate items are generated, then
+reranked with each diversification strategy. Relevance (nDCG) and diversity (ILAD, ILMD) are measured
+to answer: *(1) can diversification improve relevance? (2) how much diversity can you gain without hurting it?*
 
-In addition, we measure latency of each strategy as the number of candidates scales.
+Latency is also measured as the number of candidates scales.
 
-> **Note:** We don't benchmark COVER (coverage-based diversification) because it optimizes a different
+> **Note:** COVER (coverage-based diversification) is not included because it optimizes a different
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
 > collaborative filtering datasets.
 
@@ -25,12 +25,12 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We answer two questions:
+The results answer two questions:
 
 1. **Accuracy**: Which strategy achieves the best relevance (nDCG)?
-2. **Diversity under constraint**: How much diversity can we gain while maintaining relevance?
+2. **Diversity under constraint**: How much diversity can you gain while maintaining relevance?
 
-We measure two diversity metrics:
+Diversity is measured with two metrics:
 - **ILAD** (Intra-List Average Distance): average pairwise diversity—higher means more variety
 - **ILMD** (Intra-List Minimum Distance): minimum pairwise diversity—higher means better worst-case diversity (fewer similar pairs)
 
@@ -47,7 +47,7 @@ Each strategy's best nDCG (selecting the `diversity` that maximizes relevance):
 | MMR      | +1.5% | +11% | +17% | 0.4 |
 | MSD      | +1.0% | +17% | +5% | 0.2 |
 
-*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results are macro-averages: for each dataset, we find the best `diversity` for each strategy, then average those per-dataset bests. 10 runs per dataset.*
+*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results are macro-averages: the best `diversity` is found per strategy per dataset, then averaged. 10 runs per dataset.*
 
 ### Table 2: Diversity Leaderboard (≥99% Relevance)
 
@@ -112,15 +112,13 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 
 ## Latency
 
-All strategies are extremely fast in practice—even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling measured on a **separate synthetic benchmark** (k=10, d=256 embeddings, typical for modern embedding models):
+All strategies are fast. Even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling measured on a **separate synthetic benchmark** (k=10, d=256 embeddings, typical for modern embedding models):
 
 ![Latency vs Candidates](results/latency.png)
 
-**Key observations:**
-- **All strategies are very fast**: Even with 10,000 candidates, all strategies complete in under 100ms
-- **Typical use case**: With 100 candidates (common for reranking), all strategies complete in <1ms
+- **Typical use case** (100 candidates): all strategies complete in <1ms
 - **MMR/MSD/DPP** are same order of magnitude; DPP is modestly slower at scale
-- **SSD** is slower due to Gram-Schmidt orthogonalization—scales with embedding dimension d
+- **SSD** is slower due to Gram-Schmidt orthogonalization, which scales with embedding dimension
 
 | Strategy | 100 candidates | 1,000 candidates | 10,000 candidates |
 |----------|----------------|------------------|-------------------|
@@ -266,29 +264,29 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
 - **Runs**: 10 runs per dataset with different random seeds for robust results (20,000 total evaluations)
 - **Embeddings**: 64-dim truncated SVD on the item co-occurrence matrix (training interactions only; held-out edges excluded)
-- **Candidates**: For each user, we take the union of top-50 similar items per profile item (via cosine similarity), then score candidates by mean similarity to the profile. The held-out item is eligible; other already-interacted items are excluded
+- **Candidates**: For each user, the union of top-50 similar items per profile item (via cosine similarity), scored by mean similarity to the profile. The held-out item is eligible; other already-interacted items are excluded
 - **Selection**: k=10 items selected by each strategy
 - **`diversity` sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
-> **Evaluation setting**: We evaluate diversification as a reranking step in a transductive next-item
+> **Evaluation setting**: Diversification is evaluated as a reranking step in a transductive next-item
 > prediction setting. Item embeddings and candidate generation are learned from the interaction graph
 > with the specific held-out edges removed; rerankers are compared on the resulting candidate lists.
-> The held-out item is eligible as a candidate (we're trying to retrieve it), but other already-interacted
-> items are excluded. This setup isolates the diversification question: "given fixed candidates and scores,
+> The held-out item is eligible as a candidate (the goal is to retrieve it), but other already-interacted
+> items are excluded. This isolates the diversification question: "given fixed candidates and scores,
 > which reranking strategy produces the best relevance-diversity tradeoff?"
 
 ### Relevance-Budgeted Evaluation
 
-We use a **relevance floor** approach to ensure fair comparison:
+A **relevance floor** ensures fair comparison:
 
-1. **Baseline**: For each dataset, compute baseline nDCG at `diversity=0` (no diversification)
+1. **Baseline**: Compute baseline nDCG at `diversity=0` (no diversification) for each dataset
 2. **Filter**: Keep only configs where nDCG meets the relevance floor
 3. **Compare**: Among feasible configs, find which strategy achieves:
    - **Max ILAD**: Best overall diversity spread
    - **Max ILMD**: Best worst-case diversity (fewer similar pairs)
    - **Best Combined**: Best 2-way Diversity Score (ILAD × ILMD)
 
-We report results at two relevance floors:
+Results are reported at two relevance floors:
 - **99%**: Near-zero relevance loss, production-safe
 - **95%**: Balanced tradeoff with more diversity headroom
 
