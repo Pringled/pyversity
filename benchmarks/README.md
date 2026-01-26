@@ -6,8 +6,9 @@ Each dataset uses a leave-one-out evaluation: one item per user is held out as t
 are trained on the remaining interactions (preventing leakage), candidate items are generated, then
 reranked with each diversification strategy. Relevance (nDCG) and diversity (ILAD, ILMD) are measured
 to answer: *(1) how much can diversification improve relevance? (2) what's the relevance-diversity tradeoff?*
-
 Latency is also measured as the number of candidates scales.
+
+**TL;DR: DPP wins on all metrics**: best accuracy and best diversity at both relevance floors.
 
 > **Note:** COVER (coverage-based diversification) is not included because it optimizes a different
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
@@ -69,12 +70,6 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 | MMR      | 0.779 | -2.9% | +39% | +91% | 0.8 |
 | SSD      | 0.537 | +1.5% | +31% | +49% | 0.8 |
 | MSD      | 0.485 | -2.3% | +54% | +24% | 0.4 |
-
-### Summary
-
-- **DPP wins all three leaderboards** — best accuracy *and* best diversity at both 99% and 95% floors
-- At 99% floor: +44% ILAD, +86% ILMD, *and* +1.8% nDCG (diversity improves relevance)
-- **MSD** maximizes ILAD but sacrifices ILMD and sometimes relevance
 
 ### Recommendations
 
