@@ -32,7 +32,7 @@ We answer two questions:
 
 We measure two diversity metrics:
 - **ILAD** (Intra-List Average Distance): average pairwise diversity—higher means more variety
-- **ILMD** (Intra-List Minimum Distance): minimum pairwise diversity—higher means fewer similar pairs
+- **ILMD** (Intra-List Minimum Distance): minimum pairwise diversity—higher means better worst-case diversity (fewer similar pairs)
 
 **Why can diversification improve nDCG?** In offline leave-one-out evaluation, the "baseline" ranking (no diversification) often places many near-duplicate items at the top. Diversifiers act as intelligent tie-breakers: by spreading selections across different item neighborhoods, they increase the chance of including the held-out test item. This is why moderate diversification can *improve* relevance, not just diversity.
 
@@ -47,7 +47,7 @@ Each strategy's best nDCG (selecting the `diversity` that maximizes relevance):
 | MMR      | +1.5% | +11% | +17% | 0.4 |
 | MSD      | +1.0% | +17% | +5% | 0.2 |
 
-*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results averaged across 4 datasets, 10 runs.*
+*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results are macro-averages: for each dataset, we find the best `diversity` for each strategy, then average those per-dataset bests. 10 runs per dataset.*
 
 ### Table 2: Diversity Leaderboard (≥99% Relevance)
 
@@ -112,14 +112,14 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 
 ## Latency
 
-All strategies are extremely fast in practice—even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling with the number of candidates (k=10, d=256):
+All strategies are extremely fast in practice—even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling measured on a **separate synthetic benchmark** (k=10, d=256 embeddings, typical for modern embedding models):
 
 ![Latency vs Candidates](results/latency.png)
 
 **Key observations:**
 - **All strategies are very fast**: Even with 10,000 candidates, all strategies complete in under 100ms
 - **Typical use case**: With 100 candidates (common for reranking), all strategies complete in <1ms
-- **MMR/MSD/DPP** are nearly identical in speed for practical candidate sizes
+- **MMR/MSD/DPP** are same order of magnitude; DPP is modestly slower at scale
 - **SSD** is slower due to Gram-Schmidt orthogonalization—scales with embedding dimension d
 
 | Strategy | 100 candidates | 1,000 candidates | 10,000 candidates |
@@ -129,7 +129,7 @@ All strategies are extremely fast in practice—even with 10,000 candidates, all
 | DPP | ~0.1ms | ~2ms | ~20ms |
 | SSD | ~0.5ms | ~5ms | ~80ms |
 
-*Measured with k=10 items selected, d=256 dimensional embeddings.*
+*Measured with k=10 items selected, d=256 dimensional embeddings. Note: main benchmarks use d=64; latency benchmark uses d=256 to reflect modern embedding model dimensions.*
 
 ## Usage
 
@@ -173,7 +173,7 @@ python -m benchmarks report
 <details>
 <summary>Per-Strategy Diversity Sweep (Averaged Across Datasets)</summary>
 
-Shows how each strategy's metrics change as you increase `diversity`, averaged across all 4 datasets.
+Shows how each strategy's metrics change as you increase `diversity`, **averaged across all 4 datasets**. Baseline values (ILAD=0.42, ILMD=0.12 at `diversity=0`) are the cross-dataset averages.
 
 > **Note:** nDCG Retention can exceed 100% and may not decrease monotonically. This happens because
 > diversification can sometimes *improve* relevance by breaking ties among similar items or surfacing
@@ -265,8 +265,8 @@ Shows how each strategy's metrics change as you increase `diversity`, averaged a
 
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
 - **Runs**: 10 runs per dataset with different random seeds for robust results (20,000 total evaluations)
-- **Embeddings**: 64-dim SVD on item co-occurrence matrix, **trained on training data only** (held-out items excluded to prevent leakage)
-- **Candidates**: Top-100 similar items per profile item
+- **Embeddings**: 64-dim truncated SVD on the item co-occurrence matrix (training interactions only; held-out edges excluded)
+- **Candidates**: For each user, we take the union of top-50 similar items per profile item (via cosine similarity), then score candidates by mean similarity to the profile. The held-out item is eligible; other already-interacted items are excluded
 - **Selection**: k=10 items selected by each strategy
 - **`diversity` sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
@@ -303,8 +303,9 @@ This uses **feasible-max normalization**: the max is computed only over points m
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| **ILAD** | Average | Mean pairwise distance—measures overall variety |
-| **ILMD** | Minimum | Min pairwise distance—higher = fewer similar pairs |
+| **nDCG@10** | Relevance | Normalized Discounted Cumulative Gain at position 10 |
+| **ILAD** | Average diversity | Mean pairwise distance—measures overall variety |
+| **ILMD** | Minimum diversity | Min pairwise distance—higher = better worst-case diversity |
 
 Both are computed as `1 - cosine_similarity` between item embeddings.
 
