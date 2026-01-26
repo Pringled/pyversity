@@ -71,26 +71,17 @@ The following table describes the supported strategies, how they work, their tim
 
 | Strategy                              | What It Does                                                                                   | Time Complexity           | When to Use                                                                                    |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
-| **MMR** (Maximal Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what’s already picked. | **O(k · n · d)**          | Good default. Fast, simple, and works well when you just want to avoid near-duplicates.    |
-| **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Use when you want stronger spread, i.e. results that cover a wider range of topics or styles.      |
-| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic “repulsion.”                            | **O(k · n · d + n · k²)** | Ideal when you want to eliminate redundancy or ensure diversity is built-in to selection.  |
-| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset’s structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
-| **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll, e.g. social/news/product feeds where users consume sequentially, as well as conversational RAG to avoid showing similar chunks within the recent window.
+| **MMR** (Maximal Marginal Relevance)  | Keeps the most relevant items while down-weighting those too similar to what's already picked. | **O(k · n · d)**          | Simple baseline. Fast, easy to implement, competitive results. Recommended `diversity`: 0.6–0.7 |
+| **MSD** (Max Sum of Distances)        | Prefers items that are both relevant and far from *all* previous selections.                   | **O(k · n · d)**          | Best for maximum variety (ILAD), but may sacrifice relevance. Recommended `diversity`: 0.4–0.5 |
+| **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic "repulsion."                            | **O(k · n · d + n · k²)** | **Recommended default.** Best overall in benchmarks: highest accuracy and diversity. Recommended `diversity`: 0.6–0.8 |
+| **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset's structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
+| **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll where users consume sequentially. Recommended `diversity`: 0.8–0.9 |
 
 ## Benchmarks
 
 All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results can be found in [`benchmarks`](benchmarks/).
 
 **TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
-
-### Recommendations
-
-| Use Case | Strategy | `diversity` |
-|----------|----------|:-----------:|
-| Best overall balance | **DPP** | 0.6–0.8 |
-| Maximum variety (ILAD) | MSD | 0.4–0.5 |
-| Fewer similar pairs (ILMD) | DPP | 0.7–0.8 |
-| Sequence-aware (feeds, RAG) | SSD | 0.8–0.9 |
 
 ## Motivation
 
