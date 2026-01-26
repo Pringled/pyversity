@@ -243,6 +243,16 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 | Amazon Video Games | Games | 47K reviews | [UCSD](https://cseweb.ucsd.edu/~jmcauley/datasets.html) |
 | Goodreads | Books | 869K ratings | [UCSD](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/) |
 
+### Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| **nDCG@10** | Relevance | Normalized Discounted Cumulative Gain at position 10 |
+| **ILAD** | Average diversity | Mean pairwise distance—measures overall variety |
+| **ILMD** | Minimum diversity | Min pairwise distance—higher = better worst-case diversity |
+
+ILAD and ILMD are computed as `1 - cosine_similarity` between item embeddings.
+
 ### Experimental Setup
 
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
@@ -252,14 +262,14 @@ Shows how each strategy's metrics change as you increase `diversity`, **averaged
 - **Selection**: k=10 items selected by each strategy
 - **`diversity` sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
 
-> **Evaluation setting**: Diversification is evaluated as a reranking step in a transductive next-item
-> prediction setting. Item embeddings and candidate generation are learned from the interaction graph
-> with the specific held-out edges removed; rerankers are compared on the resulting candidate lists.
-> The held-out item is eligible as a candidate (the goal is to retrieve it), but other already-interacted
-> items are excluded. This isolates the diversification question: "given fixed candidates and scores,
-> which reranking strategy produces the best relevance-diversity tradeoff?"
+<details>
+<summary>Evaluation details</summary>
+
+Diversification is evaluated as a reranking step in a transductive next-item prediction setting. Item embeddings and candidate generation are learned from the interaction graph with the specific held-out edges removed; rerankers are compared on the resulting candidate lists. The held-out item is eligible as a candidate (the goal is to retrieve it), but other already-interacted items are excluded. This isolates the diversification question: "given fixed candidates and scores, which reranking strategy produces the best relevance-diversity tradeoff?"
 
 **Why can diversification improve nDCG?** In leave-one-out evaluation, the baseline ranking (no diversification) often places many near-duplicate items at the top. Diversifiers act as intelligent tie-breakers: by spreading selections across different item neighborhoods, they increase the chance of including the held-out test item. This is why moderate diversification can *improve* relevance, not just diversity.
+
+</details>
 
 ### Relevance-Budgeted Evaluation
 
@@ -283,15 +293,18 @@ The **Diversity Score** (used in Tables 2-3) measures balanced diversity improve
 
 This uses **feasible-max normalization**: the max is computed only over points meeting the relevance floor, ensuring fair comparison within each constraint level.
 
-### Diversity Metrics
+## Usage
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| **nDCG@10** | Relevance | Normalized Discounted Cumulative Gain at position 10 |
-| **ILAD** | Average diversity | Mean pairwise distance—measures overall variety |
-| **ILMD** | Minimum diversity | Min pairwise distance—higher = better worst-case diversity |
+```bash
+# Download datasets
+python -m benchmarks download
 
-Both are computed as `1 - cosine_similarity` between item embeddings.
+# Run benchmarks
+python -m benchmarks run
+
+# Generate report
+python -m benchmarks report
+```
 
 <details>
 <summary>Programmatic API</summary>
@@ -310,19 +323,6 @@ results = run_benchmark(config)
 ```
 
 </details>
-
-## Usage
-
-```bash
-# Download datasets
-python -m benchmarks download
-
-# Run benchmarks
-python -m benchmarks run
-
-# Generate report
-python -m benchmarks report
-```
 
 ## Citations
 
