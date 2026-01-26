@@ -81,21 +81,21 @@ The following table describes the supported strategies, how they work, their tim
 
 We evaluated all strategies across 4 recommendation datasets (MovieLens-32M, Amazon Video Games, Goodreads, Last.FM). Full methodology and detailed results are in [`benchmarks/`](benchmarks/).
 
-**TL;DR: Use DPP with `diversity=0.7-0.9`** for best overall diversity gains with minimal relevance loss.
+**TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
 
 | Relevance Floor | ILAD Improvement | ILMD Improvement |
 |-----------------|:----------------:|:----------------:|
-| 99% (strict)    | +51%             | +104%            |
-| 95% (balanced)  | +79%             | +178%            |
+| 99% (strict)    | +44%             | +86%             |
+| 95% (balanced)  | +49%             | +99%             |
 
 **Quick recommendations:**
 
 | Use Case | Strategy | `diversity` |
 |----------|----------|:-----------:|
-| Best overall balance | **DPP** | 0.7–0.9 |
-| Maximum variety (ILAD) | MSD | 0.4–0.6 |
-| Fewer similar pairs (ILMD) | DPP | 0.7–0.9 |
-| Sequence-aware (feeds, RAG) | SSD | 0.7–0.9 |
+| Best overall balance | **DPP** | 0.6–0.8 |
+| Maximum variety (ILAD) | MSD | 0.4–0.5 |
+| Fewer similar pairs (ILMD) | DPP | 0.7–0.8 |
+| Sequence-aware (feeds, RAG) | SSD | 0.8–0.9 |
 
 → See [full benchmark results](benchmarks/) for per-dataset tables and Pareto plots.
 

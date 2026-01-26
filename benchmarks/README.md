@@ -5,7 +5,7 @@ This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, 
 For each dataset, we use a leave-one-out evaluation protocol: we hold out one item per user as the
 test set, train embeddings on the remaining interactions (preventing leakage), generate candidate items,
 then rerank with each diversification strategy. We measure relevance (nDCG) and diversity (ILAD, ILMD)
-to answer: *which strategy gives the best relevance-diversity tradeoff?*
+to answer: *(1) can diversification improve relevance? (2) how much diversity can we gain without hurting it?*
 
 In addition, we measure latency of each strategy as the number of candidates scales.
 
@@ -49,8 +49,6 @@ Each strategy's best nDCG (selecting the `diversity` that maximizes relevance):
 
 *nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results averaged across 4 datasets, 10 runs.*
 
-**DPP leads**, achieving +3.1% nDCG improvement while also boosting ILAD by 26% and ILMD by 54%.
-
 ### Table 2: Diversity Leaderboard (≥99% Relevance)
 
 Best diversity per strategy while maintaining ≥99% of baseline nDCG, ranked by diversity score:
@@ -66,7 +64,7 @@ Best diversity per strategy while maintaining ≥99% of baseline nDCG, ranked by
 
 ### Table 3: Diversity Leaderboard (≥95% Relevance)
 
-Best diversity per strategy while maintaining ≥95% of baseline nDCG:
+Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by diversity score:
 
 | Strategy | Diversity Score | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
 |----------|:---------------:|:------:|:---------:|:---------:|:-----------:|
@@ -75,13 +73,11 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG:
 | SSD      | 0.537 | +1.5% | +31% | +49% | 0.8 |
 | MSD      | 0.485 | -2.3% | +54% | +24% | 0.4 |
 
-*With a looser floor, you can push diversity higher—but DPP still leads with positive nDCG gains.*
-
 ### Summary
 
-- **DPP wins on all three leaderboards**: best accuracy, best diversity under both 99% and 95% floors
-- **At strict 99% floor**: DPP achieves +44% ILAD and +86% ILMD while still *improving* nDCG (+1.8%)
-- **MSD** excels at pushing ILAD very high, but at the cost of ILMD and sometimes relevance
+- **DPP wins all three leaderboards** — best accuracy *and* best diversity at both 99% and 95% floors
+- At 99% floor: +44% ILAD, +86% ILMD, *and* +1.8% nDCG (diversity improves relevance)
+- **MSD** maximizes ILAD but sacrifices ILMD and sometimes relevance
 
 ### Recommendations
 
