@@ -290,19 +290,18 @@ We use a **relevance floor** approach to ensure fair comparison:
 3. **Compare**: Among feasible configs, find which strategy achieves:
    - **Max ILAD**: Best overall diversity spread
    - **Max ILMD**: Best worst-case diversity (fewer similar pairs)
-   - **Best Overall**: Best 3-way score combining all metrics
+   - **Best Combined**: Best 2-way Diversity Score (ILAD × ILMD)
 
 We report results at two relevance floors:
 - **99%**: Near-zero relevance loss, production-safe
 - **95%**: Balanced tradeoff with more diversity headroom
 
-The **3-way Score** rewards strategies that improve *all three* metrics:
-- `nDCG_gain = normalized(nDCG / baseline_nDCG)`
-- `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_max - ILAD_baseline)`
-- `ILMD_gain = (ILMD - ILMD_baseline) / (ILMD_max - ILMD_baseline)`
-- `Score = ∛(nDCG_gain × ILAD_gain × ILMD_gain)` (geometric mean)
+The **Diversity Score** (used in Tables 2-3) measures balanced diversity improvement:
+- `ILAD_gain = (ILAD - ILAD_baseline) / (ILAD_feasible_max - ILAD_baseline)`
+- `ILMD_gain = (ILMD - ILMD_baseline) / (ILMD_feasible_max - ILMD_baseline)`
+- `Diversity Score = √(ILAD_gain × ILMD_gain)` (geometric mean)
 
-This ensures a strategy must improve relevance AND diversity to score well.
+This uses **feasible-max normalization**: the max is computed only over points meeting the relevance floor, ensuring fair comparison within each constraint level.
 
 ### Diversity Metrics
 
