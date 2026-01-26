@@ -81,7 +81,7 @@ The following table describes the supported strategies, how they work, their tim
 
 All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results can be found in [`benchmarks`](benchmarks/).
 
-DPP is the clear winner: it boosts ILAD/ILMD by 26-44% and 54-86% respectivelywhile improving relevance by 1.8-3.1%. Use `diversity=0.5-0.8` for best overall results.
+DPP is the clear winner: it boosts ILAD/ILMD by 26-44% and 54-86% respectively while improving relevance by 1.8-3.1%. Use `diversity=0.5-0.8` for best overall results.
 
 ## Motivation
 
