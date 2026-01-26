@@ -59,9 +59,25 @@ def get_candidates(
     similarity_matrix: sparse.csr_matrix,
     topk_per_item: int = 50,
     max_candidates: int = 1000,
+    exclude_items: set[int] | None = None,
 ) -> tuple[NDArray[np.int64], NDArray[np.float32]]:
-    """Generate candidate items for a user based on their profile."""
-    profile_set = set(profile_items)
+    """
+    Generate candidate items for a user based on their profile.
+
+    Args:
+    ----
+        profile_items: Items in user's profile (used to generate candidates)
+        similarity_matrix: Item-item similarity matrix
+        topk_per_item: Top-k similar items per profile item
+        max_candidates: Maximum number of candidates to return
+        exclude_items: Items to exclude from candidates (e.g., already-seen items)
+
+    """
+    # Exclude profile items and any additional exclusions
+    exclude_set = set(profile_items)
+    if exclude_items is not None:
+        exclude_set |= exclude_items
+
     scores: dict[int, float] = {}
 
     for item in profile_items:
@@ -73,7 +89,7 @@ def get_candidates(
             indices, similarities = indices[top_idx], similarities[top_idx]
 
         for idx, sim in zip(indices, similarities):
-            if idx not in profile_set:
+            if idx not in exclude_set:
                 scores[idx] = scores.get(idx, 0.0) + sim
 
     if not scores:

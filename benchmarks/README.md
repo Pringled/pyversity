@@ -2,10 +2,10 @@
 
 This directory contains comprehensive benchmarks for **MMR**, **MSD**, **DPP**, and **SSD** across 4 recommendation datasets.
 
-For each dataset, we use a leave-one-out evaluation protocol (meaning we hold out one item
-per user as the test set), generate candidate items based on similar items, then rerank with each
-diversification strategy. We measure relevance (nDCG) and diversity (ILAD, ILMD) to trace the
-Pareto frontier of the relevance-diversity tradeoff.
+For each dataset, we use a leave-one-out evaluation protocol: we hold out one item per user as the
+test set, train embeddings on the remaining interactions (preventing leakage), generate candidate items,
+then rerank with each diversification strategy. We measure relevance (nDCG) and diversity (ILAD, ILMD)
+to answer: *which strategy gives the best relevance-diversity tradeoff?*
 
 In addition, we measure latency of each strategy as the number of candidates scales.
 
@@ -42,14 +42,14 @@ Each strategy's best nDCG (selecting the `diversity` that maximizes relevance):
 
 | Strategy | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
 |----------|:------:|:---------:|:---------:|:-----------:|
-| **DPP**  | **+5.1%** | +31% | +73% | 0.6 |
-| SSD      | +4.7% | +19% | +34% | 0.7 |
-| MMR      | +3.2% | +17% | +34% | 0.6 |
-| MSD      | +2.2% | +21% | +10% | 0.2 |
+| **DPP**  | **+3.1%** | +26% | +54% | 0.5 |
+| SSD      | +2.8% | +16% | +25% | 0.6 |
+| MMR      | +1.5% | +11% | +17% | 0.4 |
+| MSD      | +1.0% | +17% | +5% | 0.2 |
 
 *nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results averaged across 4 datasets, 10 runs.*
 
-**DPP leads**, achieving +5.1% nDCG improvement while also boosting ILAD by 31% and ILMD by 73%.
+**DPP leads**, achieving +3.1% nDCG improvement while also boosting ILAD by 26% and ILMD by 54%.
 
 ### Table 2: Diversity Leaderboard (≥99% Relevance)
 
@@ -57,10 +57,10 @@ Best diversity per strategy while maintaining ≥99% of baseline nDCG, ranked by
 
 | Strategy | Diversity Score | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
 |----------|:---------------:|:------:|:---------:|:---------:|:-----------:|
-| **DPP**  | **0.968** | +3.7% | +51% | **+107%** | 0.8 |
-| SSD      | 0.641 | +3.1% | +34% | +60% | 0.8 |
-| MMR      | 0.578 | +1.8% | +26% | +61% | 0.7 |
-| MSD      | 0.385 | +0.8% | +39% | +20% | 0.3 |
+| **DPP**  | **0.937** | +1.8% | +44% | **+86%** | 0.7 |
+| SSD      | 0.625 | +2.0% | +29% | +43% | 0.8 |
+| MMR      | 0.570 | +0.7% | +22% | +42% | 0.7 |
+| MSD      | 0.267 | +0.5% | +33% | +9% | 0.3 |
 
 *Diversity Score = geometric mean of normalized ILAD/ILMD gains (using feasible-max normalization). Higher = better balanced diversity.*
 
@@ -70,17 +70,17 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG:
 
 | Strategy | Diversity Score | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
 |----------|:---------------:|:------:|:---------:|:---------:|:-----------:|
-| **DPP**  | **0.884** | +2.8% | +58% | **+117%** | 0.8 |
-| MMR      | 0.879 | -2.4% | +53% | +122% | 0.8 |
-| SSD      | 0.704 | +0.4% | +52% | +88% | 0.9 |
-| MSD      | 0.477 | -1.6% | +57% | +32% | 0.5 |
+| **DPP**  | **0.889** | +0.2% | +49% | **+99%** | 0.8 |
+| MMR      | 0.779 | -2.9% | +39% | +91% | 0.8 |
+| SSD      | 0.537 | +1.5% | +31% | +49% | 0.8 |
+| MSD      | 0.485 | -2.3% | +54% | +24% | 0.4 |
 
 *With a looser floor, you can push diversity higher—but DPP still leads with positive nDCG gains.*
 
 ### Summary
 
 - **DPP wins on all three leaderboards**: best accuracy, best diversity under both 99% and 95% floors
-- **At strict 99% floor**: DPP achieves +51% ILAD and +107% ILMD while still *improving* nDCG (+3.7%)
+- **At strict 99% floor**: DPP achieves +44% ILAD and +86% ILMD while still *improving* nDCG (+1.8%)
 - **MSD** excels at pushing ILAD very high, but at the cost of ILMD and sometimes relevance
 
 ### Recommendations
@@ -269,10 +269,17 @@ Shows how each strategy's metrics change as you increase `diversity`, averaged a
 
 - **Evaluation**: Leave-one-out protocol with up to 2,000 sampled users per dataset (all users if fewer)
 - **Runs**: 10 runs per dataset with different random seeds for robust results (20,000 total evaluations)
-- **Embeddings**: 64-dim SVD on item co-occurrence matrix
+- **Embeddings**: 64-dim SVD on item co-occurrence matrix, **trained on training data only** (held-out items excluded to prevent leakage)
 - **Candidates**: Top-100 similar items per profile item
 - **Selection**: k=10 items selected by each strategy
 - **`diversity` sweep**: 0.0, 0.1, 0.2, ..., 0.9, 1.0
+
+> **Evaluation setting**: We evaluate diversification as a reranking step in a transductive next-item
+> prediction setting. Item embeddings and candidate generation are learned from the interaction graph
+> with the specific held-out edges removed; rerankers are compared on the resulting candidate lists.
+> The held-out item is eligible as a candidate (we're trying to retrieve it), but other already-interacted
+> items are excluded. This setup isolates the diversification question: "given fixed candidates and scores,
+> which reranking strategy produces the best relevance-diversity tradeoff?"
 
 ### Relevance-Budgeted Evaluation
 
