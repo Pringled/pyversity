@@ -25,63 +25,73 @@ In addition, we measure latency of each strategy as the number of candidates sca
 
 ## Key Findings
 
-We measure two diversity metrics: **ILAD** (average pairwise diversity—higher = more variety) and **ILMD** (minimum pairwise diversity—higher = fewer similar pairs).
+We answer two questions:
 
-### Key Insight: Diversification Can *Improve* Relevance
+1. **Accuracy**: Which strategy achieves the best relevance (nDCG)?
+2. **Diversity under constraint**: How much diversity can we gain while maintaining relevance?
 
-A surprising finding: moderate diversification often **improves** relevance (nDCG), not just diversity. This happens because diversifiers act as intelligent tie-breakers, helping surface items from different preference modes.
+We measure two diversity metrics:
+- **ILAD** (Intra-List Average Distance): average pairwise diversity—higher means more variety
+- **ILMD** (Intra-List Minimum Distance): minimum pairwise diversity—higher means fewer similar pairs
 
-### Overall Results
+**Why can diversification improve nDCG?** In offline leave-one-out evaluation, the "baseline" ranking (no diversification) often places many near-duplicate items at the top. Diversifiers act as intelligent tie-breakers: by spreading selections across different item neighborhoods, they increase the chance of including the held-out test item. This is why moderate diversification can *improve* relevance, not just diversity.
 
-Each strategy's **sweet spot**—the best operating point that maintains or improves relevance:
+### Table 1: Accuracy Leaderboard
 
-| Strategy | `diversity` | nDCG Δ | ILAD (+%) | ILMD (+%) |
-|----------|:-----------:|:------:|:---------:|:---------:|
-| **DPP**  | 0.8 | **+3.9%** | +47% | **+101%** |
-| SSD      | 0.8 | +3.1% | +34% | +60% |
-| MMR      | 0.7 | +2.1% | +20% | +51% |
-| MSD      | 0.3 | +1.2% | +33% | +18% |
+Each strategy's best nDCG (selecting the `diversity` that maximizes relevance):
 
-*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Sweet spot = highest diversity while improving or maintaining relevance. Results averaged across 4 datasets, 10 runs.*
+| Strategy | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
+|----------|:------:|:---------:|:---------:|:-----------:|
+| **DPP**  | **+5.1%** | +31% | +73% | 0.6 |
+| SSD      | +4.7% | +19% | +34% | 0.7 |
+| MMR      | +3.2% | +17% | +34% | 0.6 |
+| MSD      | +2.2% | +21% | +10% | 0.2 |
 
-**DPP leads overall**, achieving +3.9% nDCG improvement while also boosting ILAD by 47% and ILMD by 101%—a true "free lunch."
+*nDCG Δ and ILAD/ILMD show % change vs baseline (`diversity=0`). Results averaged across 4 datasets, 10 runs.*
 
-<details>
-<summary>Results at Specific Relevance Floors</summary>
+**DPP leads**, achieving +5.1% nDCG improvement while also boosting ILAD by 31% and ILMD by 73%.
 
-These tables show results when you allow some relevance loss (vs the sweet spot above which requires no loss):
+### Table 2: Diversity Leaderboard (≥99% Relevance)
 
-#### 99% Relevance Floor (≤1% loss allowed)
+Best diversity per strategy while maintaining ≥99% of baseline nDCG, ranked by diversity score:
 
-| Strategy | `diversity` | nDCG Δ | ILAD | ILMD |
-|----------|:-----------:|:------:|:----:|:----:|
-| **DPP**  | 0.8 | **+3.7%** | 0.60 (+51%) | **0.25 (+107%)** |
-| SSD      | 0.8 | +3.1% | 0.55 (+34%) | 0.21 (+60%) |
-| MMR      | 0.7 | +1.8% | 0.53 (+26%) | 0.22 (+61%) |
-| MSD      | 0.3 | +0.8% | 0.57 (+39%) | 0.16 (+20%) |
+| Strategy | Diversity Score | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
+|----------|:---------------:|:------:|:---------:|:---------:|:-----------:|
+| **DPP**  | **0.968** | +3.7% | +51% | **+107%** | 0.8 |
+| SSD      | 0.641 | +3.1% | +34% | +60% | 0.8 |
+| MMR      | 0.578 | +1.8% | +26% | +61% | 0.7 |
+| MSD      | 0.385 | +0.8% | +39% | +20% | 0.3 |
 
-#### 95% Relevance Floor (≤5% loss allowed)
+*Diversity Score = geometric mean of normalized ILAD/ILMD gains (using feasible-max normalization). Higher = better balanced diversity.*
 
-| Strategy | `diversity` | nDCG Δ | ILAD | ILMD |
-|----------|:-----------:|:------:|:----:|:----:|
-| **DPP**  | 0.8 | **+2.8%** | 0.63 (+58%) | **0.26 (+117%)** |
-| MMR      | 0.8 | -2.4% | 0.61 (+53%) | 0.27 (+122%) |
-| SSD      | 0.9 | +0.4% | 0.60 (+52%) | 0.23 (+88%) |
-| MSD      | 0.5 | -1.6% | 0.63 (+57%) | 0.18 (+32%) |
+### Table 3: Diversity Leaderboard (≥95% Relevance)
+
+Best diversity per strategy while maintaining ≥95% of baseline nDCG:
+
+| Strategy | Diversity Score | nDCG Δ | ILAD (+%) | ILMD (+%) | `diversity` |
+|----------|:---------------:|:------:|:---------:|:---------:|:-----------:|
+| **DPP**  | **0.884** | +2.8% | +58% | **+117%** | 0.8 |
+| MMR      | 0.879 | -2.4% | +53% | +122% | 0.8 |
+| SSD      | 0.704 | +0.4% | +52% | +88% | 0.9 |
+| MSD      | 0.477 | -1.6% | +57% | +32% | 0.5 |
 
 *With a looser floor, you can push diversity higher—but DPP still leads with positive nDCG gains.*
 
-</details>
+### Summary
+
+- **DPP wins on all three leaderboards**: best accuracy, best diversity under both 99% and 95% floors
+- **At strict 99% floor**: DPP achieves +51% ILAD and +107% ILMD while still *improving* nDCG (+3.7%)
+- **MSD** excels at pushing ILAD very high, but at the cost of ILMD and sometimes relevance
 
 ### Recommendations
 
 | Goal | Strategy | `diversity` | Notes |
 |------|----------|:-----------:|-------|
-| **Best overall** | **DPP** | 0.7-0.8 | Best combined score; improves relevance AND diversity |
+| **Best overall** | **DPP** | 0.6-0.8 | Best on all leaderboards; improves relevance AND diversity |
 | **Maximum variety (ILAD)** | **MSD** | 0.4-0.5 | Best ILAD, but worse ILMD and may lose relevance |
 | **Minimize similar pairs (ILMD)** | **DPP** | 0.7-0.8 | Best ILMD with strong ILAD too |
 | **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
-| **Simple implementation** | **MMR** | 0.7-0.8 | Easiest to implement, good results |
+| **Simple implementation** | **MMR** | 0.6-0.7 | Easiest to implement, good results |
 
 *`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
 
