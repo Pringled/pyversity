@@ -79,16 +79,9 @@ The following table describes the supported strategies, how they work, their tim
 
 ## Benchmarks
 
-All strategies evaluated across 4 recommendation datasets (MovieLens-32M, Amazon Video Games, Goodreads, Last.FM). Full methodology and detailed results in [`benchmarks/`](benchmarks/).
+All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results in [`benchmarks/`](benchmarks/).
 
 **TL;DR: Use DPP with `diversity=0.6-0.8`** for best overall diversity gains with minimal relevance loss.
-
-| Relevance Floor | ILAD Improvement | ILMD Improvement |
-|-----------------|:----------------:|:----------------:|
-| 99% (strict)    | +44%             | +86%             |
-| 95% (balanced)  | +49%             | +99%             |
-
-**Quick recommendations:**
 
 | Use Case | Strategy | `diversity` |
 |----------|----------|:-----------:|

@@ -71,23 +71,6 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 | SSD      | 0.537 | +1.5% | +31% | +49% | 0.8 |
 | MSD      | 0.485 | -2.3% | +54% | +24% | 0.4 |
 
-### Recommendations
-
-| Goal | Strategy | `diversity` | Notes |
-|------|----------|:-----------:|-------|
-| **Best overall** | **DPP** | 0.6-0.8 | Best on all leaderboards; improves relevance AND diversity |
-| **Maximum variety (ILAD)** | **MSD** | 0.4-0.5 | Best ILAD, but worse ILMD and may lose relevance |
-| **Minimize similar pairs (ILMD)** | **DPP** | 0.7-0.8 | Best ILMD with strong ILAD too |
-| **Sequence-aware feeds** | **SSD** | 0.8-0.9 | Use with `recent_embeddings` |
-| **Simple implementation** | **MMR** | 0.6-0.7 | Easiest to implement, good results |
-
-*`diversity=0` prioritizes relevance, `diversity=1` prioritizes diversity.*
-
-> **Note on SSD:** These benchmarks evaluate single-batch diversification. SSD is designed for
-> **sequence-aware** diversification with `recent_embeddings`—it rewards novelty relative to
-> recently shown items. In content feeds with sliding windows, SSD's novelty-relative-to-recent
-> approach should yield larger effective diversity gains than shown here.
-
 ## Plots
 
 ### ILAD (Average Diversity)
