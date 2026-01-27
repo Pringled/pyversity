@@ -24,7 +24,8 @@ def dpp(
 
     This strategy selects a diverse and relevant subset of `k` items by
     maximizing the determinant of a kernel matrix that balances item relevance
-    and pairwise similarity. Note that
+    and pairwise similarity. It uses a greedy algorithm to iteratively select items
+    that contribute the most to the overall diversity and relevance of the set.
 
     :param embeddings: 2D array of shape (n_samples, n_features).
     :param scores: 1D array of relevance scores for each item.
