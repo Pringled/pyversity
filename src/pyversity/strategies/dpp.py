@@ -57,9 +57,8 @@ def dpp(
     # Normalize feature vectors to unit length for cosine similarity
     feature_matrix = normalize_rows(feature_matrix)
 
-    # Fast path for pure relevance (diversity = 0)
+    # Pure relevance: select top-k by relevance scores
     if float(diversity) == 0.0:
-        # Pure relevance: select top-k by relevance scores
         topk = np.argsort(-relevance_scores)[:top_k].astype(np.int32)
         gains = relevance_scores[topk].astype(np.float32, copy=False)
         return DiversificationResult(

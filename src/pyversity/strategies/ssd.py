@@ -79,7 +79,7 @@ def ssd(  # noqa: C901
     # Determine effective window size
     window_size = (n_recent + top_k) if window is None else int(window)
 
-    # Pure relevance: select top-k by raw scores
+    # Pure relevance: select top-k by relevance scores
     if float(theta) == 1.0:
         topk = np.argsort(-relevance_scores)[:top_k].astype(np.int32)
         selection_scores = relevance_scores[topk].astype(np.float32, copy=False)
