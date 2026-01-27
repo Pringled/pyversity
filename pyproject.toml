@@ -46,14 +46,15 @@ dev = [
     "types-requests",
 ]
 benchmarks = [
-    "datasets",
-    "matplotlib",
-    "pandas",
-    "requests",
-    "scikit-learn",
-    "scipy",
-    "seaborn",
-    "tqdm",
+    "datasets~=3.6.0",
+    "huggingface-hub~=0.30.0",
+    "matplotlib~=3.10.0",
+    "pandas~=2.3.0",
+    "requests~=2.32.0",
+    "scikit-learn~=1.8.0",
+    "scipy~=1.16.0",
+    "seaborn~=0.13.0",
+    "tqdm~=4.67.0",
 ]
 
 [tool.ruff]
@@ -113,10 +114,3 @@ pyversity = ["py.typed"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pyversity.version.__version__"}
-
-[dependency-groups]
-dev = [
-    "datasets>=4.5.0",
-    "huggingface-hub>=1.3.2",
-    "tqdm>=4.67.1",
-]
