@@ -291,8 +291,8 @@ from benchmarks import BenchmarkConfig, run_benchmark
 from pyversity import Strategy
 
 config = BenchmarkConfig(
-    dataset_path="local/data/ml-32m",
-    sample_users=1000,
+    dataset_path="benchmarks/data/ml-32m",
+    sample_users=2000,
     strategies=[Strategy.MMR, Strategy.DPP, Strategy.MSD, Strategy.SSD],
     diversity_values=[0.0, 0.3, 0.5, 0.7, 1.0],
 )

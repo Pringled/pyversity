@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 RESULTS_DIR = Path("benchmarks/results")
-DATA_DIR = Path("local/data")
+DATA_DIR = Path("benchmarks/data")
 
 
 def cmd_download() -> None:
@@ -78,7 +78,7 @@ def cmd_download() -> None:
     logger.info("Download complete")
 
 
-def cmd_run(n_runs: int = 5, overwrite: bool = False) -> None:
+def cmd_run(n_runs: int = 10, overwrite: bool = False) -> None:
     """Run benchmarks on all datasets."""
     logger.info(f"Running benchmark suite ({n_runs} runs per dataset for robustness)...")
 

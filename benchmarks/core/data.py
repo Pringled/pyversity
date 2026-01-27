@@ -36,14 +36,14 @@ class DatasetInfo:
 DATASET_REGISTRY: dict[str, DatasetInfo] = {
     "ml-32m": DatasetInfo(
         name="ml-32m",
-        path="local/data/ml-32m",
+        path="benchmarks/data/ml-32m",
         dataset_type=DatasetType.MOVIELENS,
         rating_threshold=4.0,
         download_url="https://files.grouplens.org/datasets/movielens/ml-32m.zip",
     ),
     "lastfm": DatasetInfo(
         name="lastfm",
-        path="local/data/lastfm",
+        path="benchmarks/data/lastfm",
         dataset_type=DatasetType.LASTFM,
         rating_threshold=1.0,
         download_url="http://files.grouplens.org/datasets/hetrec2011/hetrec2011-lastfm-2k.zip",
