@@ -67,7 +67,7 @@ The `diversity` parameter tunes the trade-off between relevance and diversity: 0
 
 ## Supported Strategies
 
-The following table describes the supported strategies, how they work, their time complexity, and when to use them. The papers linked in the [references](#references) section provide more in-depth information on the strengths/weaknesses of the supported strategies.
+The papers linked in [references](#references) provide more details on each strategy.
 
 | Strategy                              | What It Does                                                                                   | Time Complexity           | When to Use                                                                                    |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -87,10 +87,10 @@ DPP is the clear winner: it boosts ILAD/ILMD by 26-44% and 54-86% respectively w
 
 Traditional retrieval systems rank results purely by relevance (how closely each item matches the query). While effective, this can lead to redundancy: top results often look nearly identical, which can create a poor user experience.
 
-Diversification techniques like MMR, MSD, COVER, and DPP help balance relevance and variety.
+Diversification techniques like MMR, MSD, COVER, DPP, and SSD help balance relevance and variety.
 Each new item is chosen not only because it’s relevant, but also because it adds new information that wasn’t already covered by earlier results.
 
-This improves exploration, user satisfaction, and coverage across many domains, for example:
+This improves exploration, user satisfaction, and coverage across many domains:
 
 - E-commerce: Show different product styles, not multiple copies of the same product.
 - News search: Highlight articles from different outlets or viewpoints.
@@ -100,12 +100,9 @@ This improves exploration, user satisfaction, and coverage across many domains, 
 
 ## Examples
 
-The following examples illustrate how to apply different diversification strategies in various scenarios.
-
 <details> <summary><b>Product / Web Search</b> — Simple diversification with MMR or DPP</summary> <br>
 
-MMR and DPP are great general-purpose diversification strategies. They are fast, easy to use, and work well in many scenarios.
-For example, in a product search setting where you want to show diverse items to a user, you can diversify the top results as follows:
+MMR and DPP work well as general-purpose diversifiers. In product search, use them to avoid showing near-duplicate results:
 
 ```python
 from pyversity import diversify, Strategy
@@ -126,7 +123,7 @@ result = diversify(
 
 <details> <summary><b>Literature Search </b> — Represent the full topic space with COVER</summary> <br>
 
-COVER (Facility-Location) is well-suited for scenarios where you want to ensure that the selected items collectively represent the entire dataset’s structure. For instance, when searching for academic papers on a broad topic, you might want to cover various subfields and methodologies:
+COVER ensures the selected items collectively represent the full topic space. For academic papers, this means covering different subfields and methodologies:
 
 ```python
 from pyversity import diversify, Strategy
@@ -149,7 +146,7 @@ result = diversify(
 <summary><b>Conversational RAG</b> — Avoid redundant chunks with SSD</summary>
 <br>
 
-In retrieval-augmented generation (RAG) for conversational AI, it’s crucial to avoid feeding the model redundant or similar chunks of information within the recent conversation context. The SSD (Sliding Spectrum Decomposition) strategy is designed for sequence-aware diversification, making it ideal for this use case:
+In conversational RAG, you want to avoid feeding the model redundant chunks. SSD diversifies relative to recent context, making it a natural fit:
 
 ```python
 import numpy as np
@@ -177,7 +174,7 @@ recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, chunk_embeddings[r
 
 <details> <summary><b>Infinite Scroll / Recommendation Feed</b> — Sequence-aware novelty with SSD</summary> <br>
 
-In content feeds or infinite scroll scenarios, users consume items sequentially. To keep the experience engaging, it’s important to introduce novelty relative to recently shown items. The SSD strategy is well-suited for this:
+In content feeds, users consume items sequentially. SSD introduces novelty relative to recently shown items, keeping the experience fresh:
 
 ```python
 import numpy as np
@@ -205,7 +202,7 @@ recent_feed_embeddings = np.vstack([recent_feed_embeddings, feed_embeddings[resu
 
 <details> <summary><b>Single Long Document</b> — Pick diverse sections with MSD</summary> <br>
 
-When summarizing or extracting information from a single long document, it’s beneficial to select sections that are both relevant and cover different parts of the document. The MSD strategy helps achieve this by preferring items that are far apart from each other:
+When extracting from a long document, you want sections that cover different parts. MSD prefers items that are far apart from each other:
 
 ```python
 from pyversity import diversify, Strategy
