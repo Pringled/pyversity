@@ -28,7 +28,7 @@
 Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
 
-It implements several popular diversification strategies such as MMR, MSD, DPP, SSD, and Cover with a clear, unified API. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). The only dependency is NumPy, making the package very lightweight.
+It implements several popular diversification strategies such as MMR, MSD, DPP, SSD, and Cover with a clear, unified API and [benchmarks](#benchmarks) for each strategy. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). The only dependency is NumPy, making the package very lightweight.
 
 
 ## Quickstart
