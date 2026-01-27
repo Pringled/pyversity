@@ -6,7 +6,8 @@ Each dataset uses a leave-one-out evaluation: one item per user is held out as t
 are trained on the remaining interactions (preventing leakage), candidate items are generated, then
 reranked with each diversification strategy. Relevance (nDCG) and diversity (ILAD, ILMD) are measured
 to answer: *(1) how much can diversification improve relevance? (2) what's the relevance-diversity tradeoff?*
-Latency is also measured as the number of candidates scales.
+
+Latency scaling is also measured for each strategy.
 
 > **Note:** COVER (coverage-based diversification) is not included because it optimizes a different
 > objective (topic/category coverage) and requires explicit item taxonomies not available in standard
