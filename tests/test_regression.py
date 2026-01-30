@@ -1,6 +1,4 @@
 # Golden-value regression tests. Regenerate with: python tests/test_regression.py
-from __future__ import annotations
-
 import numpy as np
 import pytest
 from pyversity import Metric, Strategy, diversify
@@ -15,14 +13,14 @@ K_1 = 5
 _RAW1_RECENT = _RNG1.standard_normal((3, 8)).astype(np.float32)
 RECENT_1 = _RAW1_RECENT / np.maximum(np.linalg.norm(_RAW1_RECENT, axis=1, keepdims=True), 1e-7)
 
-# Dataset 2: 50 items (45 + 5 near-duplicates), 32 dims, k=8
+# Dataset 2: 50 items (45 + 5 near-duplicates), 32 dims, k=10
 _RNG2 = np.random.default_rng(123)
 _RAW2_BASE = _RNG2.standard_normal((45, 32)).astype(np.float32)
 _RAW2_DUPES = _RAW2_BASE[:5] + _RNG2.normal(0, 0.01, (5, 32)).astype(np.float32)
 _RAW2 = np.vstack([_RAW2_BASE, _RAW2_DUPES])
 EMBEDDINGS_2 = _RAW2 / np.maximum(np.linalg.norm(_RAW2, axis=1, keepdims=True), 1e-7)
 SCORES_2 = _RNG2.uniform(0.1, 1.0, size=50).astype(np.float32)
-K_2 = 8
+K_2 = 10
 
 _RAW2_RECENT = _RNG2.standard_normal((4, 32)).astype(np.float32)
 RECENT_2 = _RAW2_RECENT / np.maximum(np.linalg.norm(_RAW2_RECENT, axis=1, keepdims=True), 1e-7)
@@ -32,7 +30,7 @@ _DATASETS = {
     2: (EMBEDDINGS_2, SCORES_2, K_2),
 }
 
-# Each case is self-contained: strategy, params, dataset, and expected output.
+# Golden test cases
 CASES: list[dict] = [
     # Dataset 1, default parameters
     dict(
@@ -219,46 +217,100 @@ CASES: list[dict] = [
         indices=[14, 6, 18, 10, 3],
         scores=[1.3788071, 1.281781, 1.0446954, 1.0005223, 1.0854802],
     ),
-    # Dataset 2 (near-duplicates, higher dimensionality)
     dict(
         id="d2-mmr-0.5",
         strategy=Strategy.MMR,
         diversity=0.5,
         dataset=2,
-        indices=[34, 44, 0, 8, 11, 2, 33, 21],
-        scores=[0.4982942, 0.4752265, 0.4423259, 0.4213459, 0.4192513, 0.4143822, 0.3673249, 0.3629451],
+        indices=[34, 44, 0, 8, 11, 2, 33, 21, 35, 49],
+        scores=[
+            0.4982942,
+            0.4752265,
+            0.4423259,
+            0.4213459,
+            0.4192513,
+            0.4143822,
+            0.3673249,
+            0.3629451,
+            0.3548062,
+            0.3130703,
+        ],
     ),
     dict(
         id="d2-msd-0.5",
         strategy=Strategy.MSD,
         diversity=0.5,
         dataset=2,
-        indices=[34, 44, 8, 26, 0, 35, 24, 33],
-        scores=[0.4982942, 1.0318062, 1.5670512, 2.1662273, 2.6055198, 3.1134424, 3.6113653, 4.1183109],
+        indices=[34, 44, 8, 26, 0, 35, 24, 33, 48, 2],
+        scores=[
+            0.4982942,
+            1.0318062,
+            1.5670512,
+            2.1662273,
+            2.6055198,
+            3.1134424,
+            3.6113653,
+            4.1183109,
+            4.5576282,
+            5.0157132,
+        ],
     ),
     dict(
         id="d2-dpp-0.5",
         strategy=Strategy.DPP,
         diversity=0.5,
         dataset=2,
-        indices=[34, 11, 44, 41, 0, 14, 21, 2],
-        scores=[5.1772084, 4.6469154, 4.3583627, 4.0794702, 3.3010585, 3.0233638, 2.8123801, 2.6220398],
+        indices=[34, 11, 44, 41, 0, 14, 21, 2, 35, 8],
+        scores=[
+            5.1772084,
+            4.6469154,
+            4.3583627,
+            4.0794702,
+            3.3010585,
+            3.0233638,
+            2.8123801,
+            2.6220398,
+            2.5165148,
+            2.2487965,
+        ],
     ),
     dict(
         id="d2-cover-0.5",
         strategy=Strategy.COVER,
         diversity=0.5,
         dataset=2,
-        indices=[21, 7, 28, 1, 23, 48, 2, 41],
-        scores=[6.4557028, 4.119772, 3.1374972, 2.4369617, 2.2468584, 2.0424407, 1.9487213, 1.7973837],
+        indices=[21, 7, 28, 1, 23, 48, 2, 41, 15, 49],
+        scores=[
+            6.4557028,
+            4.119772,
+            3.1374972,
+            2.4369617,
+            2.2468584,
+            2.0424407,
+            1.9487213,
+            1.7973837,
+            1.756186,
+            1.6591004,
+        ],
     ),
     dict(
         id="d2-ssd-0.5",
         strategy=Strategy.SSD,
         diversity=0.5,
         dataset=2,
-        indices=[34, 44, 11, 41, 0, 2, 14, 21],
-        scores=[1.52924, 1.376298, 1.3285697, 1.2422681, 1.2112706, 1.1682143, 1.1040297, 1.0666059],
+        indices=[34, 44, 11, 41, 0, 2, 14, 21, 8, 35],
+        scores=[
+            1.52924,
+            1.376298,
+            1.3285697,
+            1.2422681,
+            1.2112706,
+            1.1682143,
+            1.1040297,
+            1.0666059,
+            1.0444114,
+            1.0130265,
+        ],
     ),
     dict(
         id="d2-ssd-recent-0.5",
@@ -266,8 +318,19 @@ CASES: list[dict] = [
         diversity=0.5,
         dataset=2,
         kwargs={"recent_embeddings": RECENT_2},
-        indices=[34, 11, 44, 41, 2, 0, 21, 14],
-        scores=[1.3352783, 1.2505096, 1.2227125, 1.1950345, 1.1083739, 1.0967314, 1.052088, 1.0184829],
+        indices=[34, 11, 44, 41, 2, 0, 21, 14, 15, 8],
+        scores=[
+            1.3352783,
+            1.2505096,
+            1.2227125,
+            1.1950345,
+            1.1083739,
+            1.0967314,
+            1.052088,
+            1.0184829,
+            0.9867558,
+            0.975732,
+        ],
     ),
 ]
 
