@@ -113,7 +113,7 @@ def ssd(  # noqa: C901
         std = float(np.std(relevance_scores))
         relevance_scores = (relevance_scores - mean) / std if std > 0.0 else (relevance_scores - mean)
 
-    num_items, _ = feature_matrix.shape
+    num_items, n_dims = feature_matrix.shape
 
     # Initialize selection state
     selected_mask = np.zeros(num_items, dtype=bool)
@@ -123,31 +123,52 @@ def ssd(  # noqa: C901
     # Current residuals under the sliding window
     residual_matrix = feature_matrix.astype(np.float32, copy=True)
 
-    # Sliding window storage
-    basis_vectors: list[np.ndarray] = []
-    projection_coefficients_per_basis: list[np.ndarray] = []
+    # Incrementally maintained squared norms: residual_sq_norms[i] = ||residual_matrix[i]||^2
+    residual_sq_norms: np.ndarray = np.einsum("ij,ij->i", residual_matrix, residual_matrix)
+
+    # Pre-allocated circular buffer
+    basis_matrix = np.zeros((window_size, n_dims), dtype=np.float32)
+    coeff_matrix = np.zeros((window_size, num_items), dtype=np.float32)
+    window_count = 0
+    window_head = 0
+
+    # Pre-allocated buffer for rank-1 updates
+    _outer_buf = np.empty((num_items, n_dims), dtype=np.float32)
 
     def _push_basis_vector(basis_vector: np.ndarray) -> None:
         """Add a new basis vector to the sliding window and update residuals/projections."""
-        if len(basis_vectors) == window_size:
-            # Remove oldest basis and restore its contribution to residuals
-            oldest_basis = basis_vectors.pop(0)
-            oldest_coefficients = projection_coefficients_per_basis.pop(0)
-            mask_unselected = ~selected_mask
-            if np.any(mask_unselected):
-                residual_matrix[mask_unselected] += oldest_coefficients[mask_unselected, None] * oldest_basis
+        nonlocal window_count, window_head
 
-        denominator = float(basis_vector @ basis_vector) + EPS32
-        basis_vectors.append(basis_vector.astype(np.float32, copy=False))
+        if window_count == window_size:
+            # Evict oldest: restore its contribution to residuals (full-array op).
+            # Zero out selected items so their residuals stay untouched.
+            oldest_slot = window_head
+            coeff_matrix[oldest_slot][selected_mask] = 0.0
+            old_coeffs = coeff_matrix[oldest_slot]
+            old_basis = basis_matrix[oldest_slot]
+            old_basis_sq = float(old_basis @ old_basis)
+            # r_new = r + c * b → ||r_new||^2 = ||r||^2 + 2c(r·b) + c^2||b||^2
+            dots_evict = residual_matrix @ old_basis
+            residual_sq_norms[:] += old_coeffs * (2.0 * dots_evict + old_coeffs * old_basis_sq)
+            np.outer(old_coeffs, old_basis, out=_outer_buf)
+            np.add(residual_matrix, _outer_buf, out=residual_matrix)
+        else:
+            window_count += 1
 
-        mask_unselected = ~selected_mask
-        coefficients = np.zeros(num_items, dtype=np.float32)
-        if np.any(mask_unselected):
-            projections = (residual_matrix[mask_unselected] @ basis_vector) / denominator
-            coefficients[mask_unselected] = projections
-            residual_matrix[mask_unselected] -= projections[:, None] * basis_vector
-
-        projection_coefficients_per_basis.append(coefficients)
+        basis_sq = float(basis_vector @ basis_vector)
+        denominator = basis_sq + EPS32
+        basis_matrix[window_head] = basis_vector
+        dots = residual_matrix @ basis_vector
+        coefficients = dots / denominator
+        coefficients[selected_mask] = 0.0
+        coeff_matrix[window_head] = coefficients
+        # r_new = r - c * b → ||r_new||^2 = ||r||^2 - 2c(r·b) + c^2||b||^2
+        #                                  = ||r||^2 - c(2·dot - c·basis_sq)
+        residual_sq_norms[:] -= coefficients * (2.0 * dots - coefficients * basis_sq)
+        np.maximum(residual_sq_norms, 0.0, out=residual_sq_norms)
+        np.outer(coefficients, basis_vector, out=_outer_buf)
+        np.subtract(residual_matrix, _outer_buf, out=residual_matrix)
+        window_head = (window_head + 1) % window_size
 
     # Seed with recent context (oldest → newest) if provided
     seeded_bases = 0
@@ -156,7 +177,9 @@ def ssd(  # noqa: C901
         context = context[-window_size:]  # keep only the latest `window_size` items
         for context_vector in context:
             residual_context = context_vector.copy()
-            for basis in basis_vectors:
+            for slot_offset in range(window_count):
+                slot_idx = (window_head - window_count + slot_offset) % window_size
+                basis = basis_matrix[slot_idx]
                 denominator_b = float(basis @ basis) + EPS32
                 residual_context -= float(residual_context @ basis) / denominator_b * basis
             _push_basis_vector(residual_context)
@@ -165,7 +188,7 @@ def ssd(  # noqa: C901
     # Decide what to select first
     if seeded_bases > 0:
         # Use combined scores with diversity from seeded context
-        residual_norms = np.linalg.norm(residual_matrix, axis=1)
+        residual_norms = np.sqrt(residual_sq_norms)
         combined_scores = theta * relevance_scores + (1.0 - theta) * gamma * residual_norms
         combined_scores[selected_mask] = -np.inf
         first_index = int(np.argmax(combined_scores))
@@ -186,14 +209,12 @@ def ssd(  # noqa: C901
 
     # Main loop
     for step in range(1, top_k):
-        # Find best candidate among unselected items
-        available_indices = np.where(~selected_mask)[0]
-        # Residual norms measure novelty relative to the last `window` selections/context
-        residual_norms = np.linalg.norm(residual_matrix[available_indices], axis=1)
-        combined_scores = theta * relevance_scores[available_indices] + (1.0 - theta) * gamma * residual_norms
-        local_best = int(np.argmax(combined_scores))
-        best_index = int(available_indices[local_best])
-        best_score = float(combined_scores[local_best])
+        # Compute scores using incrementally maintained squared norms
+        residual_norms = np.sqrt(residual_sq_norms)
+        combined_scores = theta * relevance_scores + (1.0 - theta) * gamma * residual_norms
+        combined_scores[selected_mask] = -np.inf
+        best_index = int(np.argmax(combined_scores))
+        best_score = float(combined_scores[best_index])
 
         # Update selection state
         selected_mask[best_index] = True
