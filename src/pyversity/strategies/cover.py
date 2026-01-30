@@ -80,16 +80,17 @@ def cover(
     transposed_similarity_matrix = similarity_matrix.T
 
     # Initialize selection state
-    accumulated_coverage = np.zeros(similarity_matrix.shape[0], dtype=np.float32)
-    selected_mask = np.zeros(similarity_matrix.shape[0], dtype=bool)
+    num_items = similarity_matrix.shape[0]
+    accumulated_coverage = np.zeros(num_items, dtype=np.float32)
+    selected_mask = np.zeros(num_items, dtype=bool)
     selected_indices = np.empty(top_k, dtype=np.int32)
     marginal_gains = np.empty(top_k, dtype=np.float32)
 
     for step in range(top_k):
         # Compute coverage gains using concave transformation
-        concave_before = np.power(accumulated_coverage, gamma)
+        concave_before_sum = float(np.power(accumulated_coverage, gamma).sum())
         concave_after = np.power(transposed_similarity_matrix + accumulated_coverage[None, :], gamma)
-        coverage_gains = (concave_after - concave_before[None, :]).sum(axis=1)
+        coverage_gains = concave_after.sum(axis=1) - concave_before_sum
 
         # Combine relevance and coverage gains
         candidate_scores = theta * relevance_scores + (1.0 - theta) * coverage_gains
