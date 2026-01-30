@@ -92,14 +92,14 @@ All strategies are fast. Even with 10,000 candidates, all complete in <100ms. Th
 
 - **Typical use case** (100 candidates): all strategies complete in <1ms
 - **MMR/MSD/DPP** are same order of magnitude; DPP is modestly slower at scale
-- **SSD** is slower due to Gram-Schmidt orthogonalization, which scales with embedding dimension
+- **SSD** is moderately slower due to per-step residual matrix updates
 
 | Strategy | 100 candidates | 1,000 candidates | 10,000 candidates |
 |----------|----------------|------------------|-------------------|
-| MMR | ~0.1ms | ~1ms | ~10ms |
-| MSD | ~0.1ms | ~1ms | ~10ms |
-| DPP | ~0.1ms | ~2ms | ~20ms |
-| SSD | ~0.5ms | ~5ms | ~80ms |
+| MMR | ~0.1ms | ~0.2ms | ~2ms |
+| MSD | ~0.1ms | ~0.2ms | ~2ms |
+| DPP | ~0.1ms | ~0.3ms | ~2ms |
+| SSD | ~0.3ms | ~1ms | ~12ms |
 
 *Measured with k=10 items selected, d=256 dimensional embeddings. Note: main benchmarks use d=64; latency benchmark uses d=256 to reflect modern embedding model dimensions.*
 
