@@ -77,6 +77,8 @@ The papers linked in [references](#references) provide more details on each stra
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset's structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
 | **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll where users consume sequentially. Recommended `diversity`: 0.6–0.9 |
 
+Where **k** = number of items to select, **n** = number of candidates, **d** = embedding dimensionality.
+
 ## Benchmarks
 
 All strategies are evaluated across 4 recommendation datasets. Full methodology and detailed results can be found in [`benchmarks`](benchmarks/).
