@@ -86,12 +86,12 @@ Best diversity per strategy while maintaining ≥95% of baseline nDCG, ranked by
 
 ## Latency
 
-All strategies are fast. Even with 10,000 candidates, all complete in <100ms. The plot below shows latency scaling measured on a **separate synthetic benchmark** (k=10, d=256 embeddings, typical for modern embedding models):
+All strategies are fast. Even with 10,000 candidates, all complete in <15ms. The plot below shows latency scaling measured on a **separate synthetic benchmark** (k=10, d=256 embeddings):
 
 ![Latency vs Candidates](results/latency.png)
 
 - **Typical use case** (100 candidates): all strategies complete in <1ms
-- **MMR/MSD/DPP** are same order of magnitude; DPP is modestly slower at scale
+- **MMR/MSD/DPP** are same order of magnitude
 - **SSD** is moderately slower due to per-step residual matrix updates
 
 | Strategy | 100 candidates | 1,000 candidates | 10,000 candidates |
@@ -100,8 +100,6 @@ All strategies are fast. Even with 10,000 candidates, all complete in <100ms. Th
 | MSD | ~0.1ms | ~0.2ms | ~2ms |
 | DPP | ~0.1ms | ~0.3ms | ~2ms |
 | SSD | ~0.3ms | ~1ms | ~12ms |
-
-*Measured with k=10 items selected, d=256 dimensional embeddings. Note: main benchmarks use d=64; latency benchmark uses d=256 to reflect modern embedding model dimensions.*
 
 ## Detailed Results
 
