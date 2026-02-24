@@ -22,6 +22,7 @@
 [Benchmarks](#benchmarks) •
 [Motivation](#motivation) •
 [Examples](#examples) •
+[Tutorials](#tutorials) •
 [References](#references)
 
 </div>
@@ -29,7 +30,7 @@
 Pyversity is a fast, lightweight library for diversifying retrieval results.
 Retrieval systems often return highly similar items. Pyversity efficiently re-ranks these results to encourage diversity, surfacing items that remain relevant but less redundant.
 
-It implements several popular diversification strategies such as MMR, MSD, DPP, SSD, and Cover with a clear, unified API and [benchmarks](benchmarks/) for each strategy. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). The only dependency is NumPy, making the package very lightweight.
+It implements several popular diversification strategies such as MMR, MSD, DPP, SSD, and Cover with a clear, unified API and [benchmarks](benchmarks/) for each strategy. More information about the supported strategies can be found in the [supported strategies section](#supported-strategies). Pyversity is embedding-agnostic, meaning it works with any vector representation (dense embeddings, sparse embeddings, or anything else that produces a NumPy array). The only dependency is NumPy, making the package very lightweight.
 
 
 ## Quickstart
@@ -253,6 +254,12 @@ result = ssd(
 recent = np.vstack([recent_embeddings, new_embeddings[result.indices]])[-items_to_select:]
 ```
 </details>
+
+## Tutorials
+
+| Notebook | Description |
+|----------|-------------|
+| [Sparse, Dense & Hybrid Retrieval](tutorials/sparse_and_dense_retrieval.ipynb) | Shows pyversity working with BM25 sparse embeddings, sentence-transformer dense embeddings, and a hybrid combination |
 
 ## References
 
