@@ -7,7 +7,7 @@
 <div align="center">
   <h2>
     <a href="https://pypi.org/project/pyversity/"><img src="https://img.shields.io/pypi/v/pyversity?color=%23007ec6&label=pypi%20package" alt="Package version"></a>
-    <a href="https://pepy.tech/projects/pyversity"><img src="https://img.shields.io/pypi/dm/pyversity?color=%23007ec6" alt="Monthly downloads"></a>
+    <a href="https://pepy.tech/projects/pyversity"><img src="https://static.pepy.tech/badge/pyversity/month" alt="Monthly downloads"></a>
     <a href="https://app.codecov.io/gh/Pringled/pyversity">
       <img src="https://codecov.io/gh/Pringled/pyversity/graph/badge.svg?token=2CV5W0ZT7T" alt="Codecov">
     </a>
