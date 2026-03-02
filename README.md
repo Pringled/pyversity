@@ -260,6 +260,7 @@ recent = np.vstack([recent_embeddings, new_embeddings[result.indices]])[-items_t
 | Notebook | Description |
 |----------|-------------|
 | [Sparse, Dense & Hybrid Retrieval](tutorials/sparse_and_dense_retrieval.ipynb) | Shows pyversity working with BM25 sparse embeddings, sentence-transformer dense embeddings, and a hybrid combination |
+| [Sequence-Aware Recommendation Feeds with SSD](tutorials/ssd_recommendation_feed.ipynb) | Simulates a multi-page ML paper feed to show how SSD diversifies *across* pages using rolling history, while DPP repeats the same topics page after page |
 
 ## References
 
