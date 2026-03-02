@@ -41,7 +41,8 @@ dev = [
     "mypy",
     "pre-commit",
     "pytest",
-    "pytest-coverage",
+    "pytest-codeblock",
+    "pytest-cov",
     "ruff",
     "types-requests",
 ]
@@ -114,3 +115,33 @@ pyversity = ["py.typed"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pyversity.version.__version__"}
+
+[tool.pytest.ini_options]
+addopts = [
+    "-ra",
+    "-vvv",
+    "-q",
+    "--cov=pyversity",
+    "--ignore=benchmarks",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-append",
+    "--capture=no",
+]
+pythonpath = ["src"]
+norecursedirs = [".git", "benchmarks"]
+
+[tool.coverage.run]
+relative_files = true
+omit = []
+source = ["pyversity"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "@overload",
+]
+
+[tool.pytest-codeblock]
+test_nameless_codeblocks = true
