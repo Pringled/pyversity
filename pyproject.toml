@@ -122,18 +122,18 @@ addopts = [
     "-vvv",
     "-q",
     "--cov=pyversity",
-    "--ignore=benchmarks",
+    "--cov=benchmarks",
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-append",
     "--capture=no",
 ]
 pythonpath = ["src"]
-norecursedirs = [".git", "benchmarks"]
+norecursedirs = [".git"]
 
 [tool.coverage.run]
 relative_files = true
-omit = []
+omit = ["benchmarks/*"]
 source = ["pyversity"]
 
 [tool.coverage.report]
