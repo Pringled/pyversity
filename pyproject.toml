@@ -121,6 +121,7 @@ addopts = [
     "-ra",
     "-vvv",
     "-q",
+    "-p", "tests.docs_conftest",
     "--cov=pyversity",
     "--cov=benchmarks",
     "--cov-report=html",
@@ -128,7 +129,7 @@ addopts = [
     "--cov-append",
     "--capture=no",
 ]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 norecursedirs = [".git"]
 
 [tool.coverage.run]
