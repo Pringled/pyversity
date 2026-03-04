@@ -107,6 +107,8 @@ This improves exploration, user satisfaction, and coverage across many domains:
 
 MMR and DPP work well as general-purpose diversifiers. In product search, use them to avoid showing near-duplicate results:
 
+<!-- pytestfixture: item_embeddings -->
+<!-- pytestfixture: item_scores -->
 ```python
 from pyversity import diversify, Strategy
 
@@ -128,6 +130,8 @@ result = diversify(
 
 COVER ensures the selected items collectively represent the full topic space. For academic papers, this means covering different subfields and methodologies:
 
+<!-- pytestfixture: paper_embeddings -->
+<!-- pytestfixture: paper_scores -->
 ```python
 from pyversity import diversify, Strategy
 
@@ -151,6 +155,9 @@ result = diversify(
 
 In conversational RAG, you want to avoid feeding the model redundant chunks. SSD diversifies relative to recent context, making it a natural fit:
 
+<!-- pytestfixture: chunk_embeddings -->
+<!-- pytestfixture: chunk_scores -->
+<!-- pytestfixture: recent_chunk_embeddings -->
 ```python
 import numpy as np
 from pyversity import diversify, Strategy
@@ -179,6 +186,9 @@ recent_chunk_embeddings = np.vstack([recent_chunk_embeddings, chunk_embeddings[r
 
 In content feeds, users consume items sequentially. SSD introduces novelty relative to recently shown items, keeping the experience fresh:
 
+<!-- pytestfixture: feed_embeddings -->
+<!-- pytestfixture: feed_scores -->
+<!-- pytestfixture: recent_feed_embeddings -->
 ```python
 import numpy as np
 from pyversity import diversify, Strategy
@@ -207,6 +217,8 @@ recent_feed_embeddings = np.vstack([recent_feed_embeddings, feed_embeddings[resu
 
 When extracting from a long document, you want sections that cover different parts. MSD prefers items that are far apart from each other:
 
+<!-- pytestfixture: doc_chunk_embeddings -->
+<!-- pytestfixture: doc_chunk_scores -->
 ```python
 from pyversity import diversify, Strategy
 

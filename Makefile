@@ -3,10 +3,10 @@ install:
 	uv run pre-commit install
 
 install-no-pre-commit:
-	uv pip install ".[dev]"
+	uv pip install ".[dev,benchmarks]"
 
 fix:
 	uv run pre-commit run --all-files
 
 test:
-	uv run pytest --cov=PACKAGE --cov-report=term-missing
+	uv run pytest

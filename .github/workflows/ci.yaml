@@ -40,9 +40,7 @@ jobs:
 
       # Run tests with coverage
       - name: Run tests under coverage
-        run: |
-          coverage run --source=pyversity -m pytest
-          coverage report
+        run: make test
 
       # Upload results to Codecov
       - name: Upload results to Codecov
