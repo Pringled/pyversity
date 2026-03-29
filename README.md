@@ -77,6 +77,8 @@ The papers linked in [references](#references) provide more details on each stra
 | **DPP** (Determinantal Point Process) | Samples diverse yet relevant items using probabilistic "repulsion."                            | **O(k · n · d + n · k²)** | **Recommended default.** Best overall in benchmarks: highest accuracy and diversity. Recommended `diversity`: 0.5–0.8 |
 | **COVER** (Facility-Location)         | Ensures selected items collectively represent the full dataset's structure.                    | **O(k · n²)**             | Great for topic coverage or clustering scenarios, but slower for large `n`. |
 | **SSD** (Sliding Spectrum Decomposition) | Sequence‑aware diversification: rewards novelty relative to recently shown items.     | **O(k · n · d)**          | Great for content feeds & infinite scroll where users consume sequentially. Recommended `diversity`: 0.6–0.9 |
+| **xQuAD** (Explicit Query Aspect Diversification) | Greedily covers distinct user intents proportional to their estimated probability. Requires aspect embeddings. | **O(k · n · a · d)** | When queries are ambiguous and user intents can be enumerated. Web search, e-commerce, news aggregation. Recommended `diversity`: 0.5–0.8 |
+| **RxQuAD** (Relevance-weighted xQuAD) | Like xQuAD but infers aspect importance from retrieval scores — no prior needed. | **O(k · n · a · d)** | Same as xQuAD when aspect weights are unknown. Drop-in replacement when no prior over intents is available. Recommended `diversity`: 0.5–0.8 |
 
 Where **k** = number of items to select, **n** = number of candidates, **d** = embedding dimensionality.
 
@@ -235,6 +237,53 @@ result = diversify(
 )
 ```
 
+</details>
+
+<details> <summary><b>Ambiguous Queries</b> — Intent-aware diversification with xQuAD</summary> <br>
+
+When a query is ambiguous, geometric diversification (MMR, DPP) may still return many results for the most common intent. xQuAD explicitly covers all user intents proportionally:
+
+<!-- pytestfixture: article_embeddings -->
+<!-- pytestfixture: article_scores -->
+<!-- pytestfixture: aspect_embeddings -->
+```python
+import numpy as np
+from pyversity import diversify, Strategy
+
+# Suppose you have:
+# - article_embeddings: embeddings of retrieved articles
+# - article_scores: relevance scores for these articles
+# - aspect_embeddings: one embedding per user intent (e.g. from an LLM)
+
+# Re-rank with xQuAD to cover all intents proportionally
+result = diversify(
+    embeddings=article_embeddings,
+    scores=article_scores,
+    k=10,
+    strategy=Strategy.XQUAD,
+    diversity=0.6,
+    aspect_embeddings=aspect_embeddings,
+)
+```
+
+If you have no prior over aspect importance, use RxQuAD — it infers weights from the retrieval scores:
+
+<!-- pytestfixture: article_embeddings -->
+<!-- pytestfixture: article_scores -->
+<!-- pytestfixture: aspect_embeddings -->
+```python
+import numpy as np
+from pyversity import diversify, Strategy
+
+result = diversify(
+    embeddings=article_embeddings,
+    scores=article_scores,
+    k=10,
+    strategy=Strategy.RXQUAD,
+    diversity=0.6,
+    aspect_embeddings=aspect_embeddings,
+)
+```
 </details>
 
 <details> <summary><b>Advanced Usage</b> — Customizing Strategies</summary> <br

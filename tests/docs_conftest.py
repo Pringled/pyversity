@@ -146,3 +146,26 @@ def doc_chunk_embeddings() -> np.ndarray:
 def doc_chunk_scores() -> np.ndarray:
     """Document chunk scores for testing the single long document example."""
     return _scores()
+
+
+# --- Ambiguous Queries / xQuAD (test_README_7, test_README_8) ---
+
+_A = 4  # number of aspects
+
+
+@pytest.fixture
+def article_embeddings() -> np.ndarray:
+    """Article embeddings for testing the xQuAD / RxQuAD example."""
+    return _emb()
+
+
+@pytest.fixture
+def article_scores() -> np.ndarray:
+    """Article scores for testing the xQuAD / RxQuAD example."""
+    return _scores()
+
+
+@pytest.fixture
+def aspect_embeddings() -> np.ndarray:
+    """Aspect embeddings (one per user intent) for testing the xQuAD / RxQuAD example."""
+    return _emb(_A)

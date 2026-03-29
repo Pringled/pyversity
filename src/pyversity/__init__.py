@@ -1,6 +1,6 @@
 from pyversity.datatypes import DiversificationResult, Metric, Strategy
 from pyversity.pyversity import diversify
-from pyversity.strategies import cover, dpp, mmr, msd, ssd
+from pyversity.strategies import cover, dpp, mmr, msd, rxquad, ssd, xquad
 from pyversity.version import __version__
 
 __all__ = [
@@ -13,5 +13,7 @@ __all__ = [
     "cover",
     "dpp",
     "ssd",
+    "xquad",
+    "rxquad",
     "__version__",
 ]
