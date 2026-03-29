@@ -333,6 +333,10 @@ The implementations in this package are based on the following research papers:
 - **SSD**: Huang, Y., Wang, W., Zhang, L., & Xu, R. (2021). Sliding Spectrum Decomposition for Diversified
 Recommendation. [Link](https://arxiv.org/pdf/2107.05204)
 
+- **xQuAD**: Santos, R. L. T., Macdonald, C., & Ounis, I. (2010). Exploiting query reformulations for web search result diversification. WWW 2010. [Link](https://dl.acm.org/doi/10.1145/1772690.1772780)
+
+- **RxQuAD**: Vargas, S., Castells, P., & Vallet, D. (2011). Intent-oriented diversity in recommender systems. SIGIR 2011. [Link](https://dl.acm.org/doi/10.1145/2009916.2010124)
+
 ## Author
 
 Thomas van Dongen
